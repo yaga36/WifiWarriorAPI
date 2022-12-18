@@ -8,7 +8,7 @@ using WifiWarriorAPI.Models;
 namespace WifiWarriorAPI.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
     private readonly ApiDbContext _context;
@@ -36,7 +36,7 @@ public class UsersController : ControllerBase
     /// </summary>
     /// <returns>User by Id.</returns>
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(string id)
     {
         if (!await _context.Users.AnyAsync())
             return NotFound();
@@ -70,8 +70,8 @@ public class UsersController : ControllerBase
     /// <param name="users">The Users Updated Object</param>
     /// <param name="id">The identifier.</param>
     /// <returns>No Content</returns>
-    [HttpPut("{id:long}")]
-    public async Task<IActionResult> Put([FromBody] Users users, long id)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Put([FromBody] Users users, string id)
     {
         if (id != users.Id)
             return BadRequest();
@@ -106,8 +106,8 @@ public class UsersController : ControllerBase
     /// </summary>
     /// <param name="id">The identifier.</param>
     /// <returns>No Content</returns>
-    [HttpDelete("{id:long}")]
-    public async Task<IActionResult> Delete(long id)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(string id)
     {
         if (! await _context.Users.AnyAsync())
             return NotFound();

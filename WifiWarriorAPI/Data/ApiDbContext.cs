@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using WifiWarriorAPI.Configurations.Entities;
 using WifiWarriorAPI.Models;
 
 namespace WifiWarriorAPI.Data;
 
-public class ApiDbContext: DbContext
+public class ApiDbContext: IdentityDbContext<Users>
 {
     public virtual DbSet<Venue> Venues { get; set; }
     public virtual DbSet<Address> Addresses { get; set; }
@@ -17,6 +19,8 @@ public class ApiDbContext: DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfiguration(new RoleConfiguration());
         
         modelBuilder.Entity<Address>(entity =>
         {
@@ -38,12 +42,14 @@ public class ApiDbContext: DbContext
         
         modelBuilder.Entity<Users>().HasData(new Users
         {
-            Id = 1,
-            Username = "TestUsername",
+            Id = "1",
+            UserName = "TestUsername",
+            PasswordHash = "UserPasswordHash",
             Password = "UserPassword",
             FirstName = "TestName",
             LastName = "TestLastName",
-            Email = "Test@email.com"
+            Email = "Test@email.com",
+            PhoneNumber = "07123456789"
         });
 
         var connectionType = new List<ConnectionType>();

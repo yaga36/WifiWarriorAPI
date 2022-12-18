@@ -7,7 +7,7 @@ using WifiWarriorAPI.Models;
 namespace WifiWarriorAPI.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class ConnectionInformationController : ControllerBase
 {
     private readonly ApiDbContext _context;

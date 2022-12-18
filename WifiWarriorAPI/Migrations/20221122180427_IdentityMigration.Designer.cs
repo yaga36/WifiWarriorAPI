@@ -12,8 +12,8 @@ using WifiWarriorAPI.Data;
 namespace WifiWarriorAPI.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20221119220322_UpdateBaseEntityId")]
-    partial class UpdateBaseEntityId
+    [Migration("20221122180427_IdentityMigration")]
+    partial class IdentityMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,138 @@ namespace WifiWarriorAPI.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex");
+
+                    b.ToTable("AspNetRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetRoleClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserLogins", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoleId")
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("AspNetUserRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId", "LoginProvider", "Name");
+
+                    b.ToTable("AspNetUserTokens", (string)null);
+                });
 
             modelBuilder.Entity("WifiWarriorAPI.Models.Address", b =>
                 {
@@ -99,7 +231,7 @@ namespace WifiWarriorAPI.Migrations
                             ConnectionInformationId = 1L,
                             County = "County",
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 19, 22, 3, 21, 901, DateTimeKind.Local).AddTicks(1290),
+                            CreatedDate = new DateTime(2022, 11, 22, 18, 4, 27, 712, DateTimeKind.Local).AddTicks(8350),
                             Latitude = 0.10000000000000001,
                             Longitude = 0.10000000000000001,
                             Postcode = "Postcode",
@@ -157,7 +289,7 @@ namespace WifiWarriorAPI.Migrations
                             BaseEntityId = 0L,
                             ConnectionTypeId = 2L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 19, 22, 3, 21, 901, DateTimeKind.Local).AddTicks(1280),
+                            CreatedDate = new DateTime(2022, 11, 22, 18, 4, 27, 712, DateTimeKind.Local).AddTicks(8340),
                             Status = 1,
                             WifiLoginDetailsId = 1L
                         });
@@ -203,7 +335,7 @@ namespace WifiWarriorAPI.Migrations
                             Id = 1L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 19, 22, 3, 21, 901, DateTimeKind.Local).AddTicks(1230),
+                            CreatedDate = new DateTime(2022, 11, 22, 18, 4, 27, 712, DateTimeKind.Local).AddTicks(8280),
                             Name = "Open",
                             Status = 1
                         },
@@ -212,7 +344,7 @@ namespace WifiWarriorAPI.Migrations
                             Id = 2L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 19, 22, 3, 21, 901, DateTimeKind.Local).AddTicks(1250),
+                            CreatedDate = new DateTime(2022, 11, 22, 18, 4, 27, 712, DateTimeKind.Local).AddTicks(8310),
                             Name = "Password",
                             Status = 1
                         },
@@ -221,7 +353,7 @@ namespace WifiWarriorAPI.Migrations
                             Id = 3L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 19, 22, 3, 21, 901, DateTimeKind.Local).AddTicks(1260),
+                            CreatedDate = new DateTime(2022, 11, 22, 18, 4, 27, 712, DateTimeKind.Local).AddTicks(8310),
                             Name = "Login",
                             Status = 1
                         });
@@ -229,15 +361,23 @@ namespace WifiWarriorAPI.Migrations
 
             modelBuilder.Entity("WifiWarriorAPI.Models.Users", b =>
                 {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -247,27 +387,74 @@ namespace WifiWarriorAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<string>("Password")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("character varying(15)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Username")
-                        .IsRequired()
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex");
+
+                    b.ToTable("AspNetUsers", (string)null);
 
                     b.HasData(
                         new
                         {
-                            Id = 1L,
+                            Id = "1",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "4057acb2-8b0d-4ab3-944b-5abc8b1269e6",
                             Email = "Test@email.com",
+                            EmailConfirmed = false,
                             FirstName = "TestName",
                             LastName = "TestLastName",
+                            LockoutEnabled = false,
                             Password = "UserPassword",
-                            Username = "TestUsername"
+                            PasswordHash = "UserPasswordHash",
+                            PhoneNumber = "07123456789",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "cdfb765c-77fb-4cbc-aed9-becd234a0d8a",
+                            TwoFactorEnabled = false,
+                            UserName = "TestUsername"
                         });
                 });
 
@@ -311,7 +498,7 @@ namespace WifiWarriorAPI.Migrations
                             Id = 1L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 19, 22, 3, 21, 901, DateTimeKind.Local).AddTicks(1300),
+                            CreatedDate = new DateTime(2022, 11, 22, 18, 4, 27, 712, DateTimeKind.Local).AddTicks(8360),
                             Name = "Venue Name",
                             Status = 1
                         });
@@ -361,11 +548,62 @@ namespace WifiWarriorAPI.Migrations
                             Id = 1L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 19, 22, 3, 21, 901, DateTimeKind.Local).AddTicks(1270),
+                            CreatedDate = new DateTime(2022, 11, 22, 18, 4, 27, 712, DateTimeKind.Local).AddTicks(8330),
                             Password = "Password",
                             Ssid = "SSID",
                             Status = 1
                         });
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
+                {
+                    b.HasOne("WifiWarriorAPI.Models.Users", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
+                {
+                    b.HasOne("WifiWarriorAPI.Models.Users", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WifiWarriorAPI.Models.Users", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
+                {
+                    b.HasOne("WifiWarriorAPI.Models.Users", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("WifiWarriorAPI.Models.Address", b =>

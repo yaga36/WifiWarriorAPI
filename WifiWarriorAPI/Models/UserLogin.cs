@@ -3,23 +3,26 @@ using Microsoft.AspNetCore.Identity;
 
 namespace WifiWarriorAPI.Models;
 
-public class Users : LoginUser
+public class UserInfo : LoginInfo
 {
     public string FirstName { get; set; }
    
     public string LastName { get; set; }
-
-    [DataType(DataType.PhoneNumber)] 
-    public override string? PhoneNumber { get; set; }
+    
+    [DataType(DataType.PhoneNumber)]
+    public string? PhoneNumber { get; set; }
+    
+    public ICollection<string> Roles { get; set; }
 }
 
-public class LoginUser : IdentityUser
+public class LoginInfo : IdentityUser
 {
     [Required]
     [DataType(DataType.EmailAddress)]
-    public override string Email { get; set; }
+    public string Email { get; set; }
 
     [Required]
+    [DataType(DataType.Password)]
     [StringLength(15, ErrorMessage = "Your password is limited to {2} and {1} character", MinimumLength = 1)]
-    public string Password { get; set; }
+    public string Password { get; set; }  
 }

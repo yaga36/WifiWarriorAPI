@@ -1,4 +1,6 @@
 using System.Dynamic;
+using System.Runtime.InteropServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WifiWarriorAPI.Data;
@@ -6,8 +8,9 @@ using WifiWarriorAPI.Models;
 
 namespace WifiWarriorAPI.Controllers;
 
+[Authorize]
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class AddressController : ControllerBase
 {
     private readonly ApiDbContext _context;
@@ -22,6 +25,7 @@ public class AddressController : ControllerBase
     /// </summary>
     /// <returns>All addresses in a list.</returns>
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> Get()
     {
 
