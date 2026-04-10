@@ -18,8 +18,4 @@ public class LoginUser : IdentityUser
     [Required]
     [DataType(DataType.EmailAddress)]
     public override string Email { get; set; }
-
-    [Required]
-    [StringLength(15, ErrorMessage = "Your password is limited to {2} and {1} character", MinimumLength = 1)]
-    public string Password { get; set; }
 }

@@ -17,11 +17,22 @@ public static class ServiceExtensions
         builder.AddEntityFrameworkStores<ApiDbContext>().AddDefaultTokenProviders();
     }
 
-    public static void ConfigureJWT(this IServiceCollection services, IConfiguration configuration)
+    public static void ConfigureJwt(this IServiceCollection services, IConfiguration configuration)
     {
         var jwtSettings = configuration.GetSection("JWT");
-        var key = Environment.GetEnvironmentVariable("JWT_WW");
-
+        var key = configuration["JWT:Key"];
+        var issuer = jwtSettings["Issuer"];
+        var audience = jwtSettings["Audience"];
+        
+        if (string.IsNullOrEmpty(key))
+            throw new InvalidOperationException("JWT:Key is not set");
+        
+        if (string.IsNullOrEmpty(issuer))
+            throw new InvalidOperationException("JWT:Issuer is not set");
+        
+        if (string.IsNullOrEmpty(audience))
+            throw new InvalidOperationException("JWT:Audience is not set");
+        
         services.AddAuthentication(opt =>
         {
             opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -31,14 +42,15 @@ public static class ServiceExtensions
             opt.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
+                ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSettings.GetSection("Issuer").Value,
+                ValidIssuer = issuer,
+                ValidAudience = audience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
                 NameClaimType = "name",
                 RoleClaimType = "roles"
             };
-            opt.Audience = "https://localhost:7028";
         });
     }
 }

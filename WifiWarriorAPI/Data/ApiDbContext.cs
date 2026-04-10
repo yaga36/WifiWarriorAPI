@@ -11,9 +11,12 @@ public class ApiDbContext: IdentityDbContext<Users>
     public virtual DbSet<Address> Addresses { get; set; }
     public virtual DbSet<ConnectionType> ConnectionTypes { get; set; }
     public virtual DbSet<ConnectionInformation> ConnectionInformation { get; set; }
-    public virtual DbSet<Users> Users { get; set; }
     public virtual DbSet<WifiLoginDetails> WifiLoginDetails { get; set; }
 
+    /// <summary>
+    /// The constructor for the ApiDbContext.
+    /// </summary>
+    /// <param name="options">The options for the ApiDbContext.</param>
     public ApiDbContext(DbContextOptions<ApiDbContext> options) : base(options){ }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,18 +41,6 @@ public class ApiDbContext: IdentityDbContext<Users>
             entity.HasOne(wd => wd.WifiLoginDetails)
                 .WithOne()
                 .HasForeignKey<ConnectionInformation>(ci => ci.WifiLoginDetailsId);
-        });
-        
-        modelBuilder.Entity<Users>().HasData(new Users
-        {
-            Id = "1",
-            UserName = "TestUsername",
-            PasswordHash = "UserPasswordHash",
-            Password = "UserPassword",
-            FirstName = "TestName",
-            LastName = "TestLastName",
-            Email = "Test@email.com",
-            PhoneNumber = "07123456789"
         });
 
         var connectionType = new List<ConnectionType>();

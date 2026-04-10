@@ -5,3 +5,5 @@ riderModule.iml
 /_ReSharper.Caches/
 
 WifiWarriorAPI/appsettings.Development.json
+.idea/
+*.sln.DotSettings.user

@@ -4,6 +4,6 @@ namespace WifiWarriorAPI.Services;
 
 public interface IAuthManager
 {
-    Task<bool> ValidateUser(LoginInfo loginUser);
-    Task<string> CreateToken();
+    Task<Users?> ValidateUser(LoginInfo loginUser);
+    Task<string> CreateToken(Users user);
 }

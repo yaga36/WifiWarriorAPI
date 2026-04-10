@@ -1,28 +1,41 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
 
 namespace WifiWarriorAPI.Models;
 
+/// <summary>
+/// User Information.
+/// </summary>
 public class UserInfo : LoginInfo
 {
-    public string FirstName { get; set; }
+    /// <summary>
+    /// First Name.
+    /// </summary>
+    public required string FirstName { get; set; }
    
-    public string LastName { get; set; }
+    /// <summary>
+    /// Last Name.
+    /// </summary>
+    public required string LastName { get; set; }
     
+    /// <summary>
+    /// Phone Number.
+    /// </summary>
     [DataType(DataType.PhoneNumber)]
     public string? PhoneNumber { get; set; }
-    
-    public ICollection<string> Roles { get; set; }
 }
 
-public class LoginInfo : IdentityUser
+public class LoginInfo
 {
-    [Required]
+    /// <summary>
+    /// The users Email.
+    /// </summary>
     [DataType(DataType.EmailAddress)]
-    public string Email { get; set; }
+    public required string Email { get; set; }
 
-    [Required]
+    /// <summary>
+    /// The users password.
+    /// </summary>
     [DataType(DataType.Password)]
     [StringLength(15, ErrorMessage = "Your password is limited to {2} and {1} character", MinimumLength = 1)]
-    public string Password { get; set; }  
+    public required string Password { get; set; }  
 }
