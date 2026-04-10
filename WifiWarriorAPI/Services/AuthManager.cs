@@ -58,7 +58,7 @@ public class AuthManager : IAuthManager
     {
         var claims = new List<Claim>
         {
-            new("name", user.UserName ?? user.Email)
+            new("name", (user.UserName ?? user.Email) ?? string.Empty)
         };
 
         var roles = await _userManager.GetRolesAsync(user);

@@ -90,7 +90,8 @@ public class ApiDbContext: IdentityDbContext<Users>
             Latitude = 0.1,
             Longitude = 0.1,
             VenueId = 1,
-            ConnectionInformationId = 1
+            ConnectionInformationId = 1,
+            Venue = new Venue{ Id = 1, Name = "Venue Name" },
         });
         
         modelBuilder.Entity<Venue>().HasData(new Venue

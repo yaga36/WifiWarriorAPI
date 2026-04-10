@@ -1,4 +1,3 @@
-using System.Reflection.Metadata.Ecma335;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WifiWarriorAPI.Data;
@@ -24,10 +23,8 @@ public class WifiDetailsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        if (!await _context.WifiLoginDetails.AnyAsync())
-            return NotFound();
-                
-        return Ok(_context.WifiLoginDetails.ToList());
+        var wifiDetails = await _context.WifiLoginDetails.ToListAsync();
+        return Ok(wifiDetails);
     }
     
     /// <summary>
@@ -37,12 +34,9 @@ public class WifiDetailsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        if (!await _context.WifiLoginDetails.AnyAsync())
-            return NotFound();
-        
-        var result = await _context.WifiLoginDetails.Where(x => x.Id == id).ToListAsync();
+        var result = await _context.WifiLoginDetails.FirstOrDefaultAsync(x => x.Id == id);
 
-        if (result == null)
+        if (result is null)
             return NotFound();
 
         return Ok(result);
@@ -56,7 +50,7 @@ public class WifiDetailsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] WifiLoginDetails wifiDetails)
     {
-        wifiDetails.CreatedDate = DateTime.Now;
+        wifiDetails.CreatedDate = DateTime.UtcNow;
         
         var result = await _context.WifiLoginDetails.AddAsync(wifiDetails);
 
@@ -80,7 +74,7 @@ public class WifiDetailsController : ControllerBase
         if (!await _context.WifiLoginDetails.AnyAsync())
             return NotFound();
 
-        wifiDetails.UpdatedDate = DateTime.Now;
+        wifiDetails.UpdatedDate = DateTime.UtcNow;
         //TODO: User updated by.
         
         _context.Entry(wifiDetails).State = EntityState.Modified;

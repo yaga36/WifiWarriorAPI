@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Dynamic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WifiWarriorAPI.Data;
@@ -25,25 +23,20 @@ public class UsersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        if (!await _context.Users.AnyAsync())
-            return NotFound();
-
-        return Ok(await _context.Users.ToListAsync());
+        var users = await _context.Users.ToListAsync();
+        return Ok(users);
     }
     
     /// <summary>
     /// Gets user from database by Id.
     /// </summary>
     /// <returns>User by Id.</returns>
-    [HttpGet("{id:int}")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
-        if (!await _context.Users.AnyAsync())
-            return NotFound();
+        var result = await _context.Users.FirstOrDefaultAsync(x => x.Id == id);
 
-        var result = await _context.Users.Where(x => x.Id == id).ToListAsync();
-
-        if (result == null)
+        if (result is null)
             return NotFound();
         
         return Ok(result);

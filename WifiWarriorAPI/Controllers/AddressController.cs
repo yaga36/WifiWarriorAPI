@@ -1,5 +1,3 @@
-using System.Dynamic;
-using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,15 +26,13 @@ public class AddressController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Get()
     {
-
-        if (!await _context.Addresses.AnyAsync())
-            return NotFound();
-        
         var addresses = await _context.Addresses
             .Include(r => r.Venue)
-            .Include(r => r.ConnectionInformation)
-            .Include(r => r.ConnectionInformation.ConnectionType)
-            .Include(r => r.ConnectionInformation.WifiLoginDetails).ToListAsync();
+            .Include(r => r.ConnectionInformation!)
+                .ThenInclude(ci => ci.ConnectionType)
+            .Include(r => r.ConnectionInformation!)
+                .ThenInclude(ci => ci.WifiLoginDetails)
+            .ToListAsync();
         
         return Ok(addresses);
     }
@@ -53,12 +49,13 @@ public class AddressController : ControllerBase
 
         var result = await _context.Addresses
             .Include(r => r.Venue)
-            .Include(r => r.ConnectionInformation)
-            .Include(r => r.ConnectionInformation.ConnectionType)
-            .Include(r => r.ConnectionInformation.WifiLoginDetails)
-            .Where(x => x.Id == id).ToListAsync();
+            .Include(r => r.ConnectionInformation!)
+                .ThenInclude(ci => ci.ConnectionType)
+            .Include(r => r.ConnectionInformation!)
+                .ThenInclude(ci => ci.WifiLoginDetails)
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (result == null)
+        if (result is null)
             return NotFound();
 
         return Ok(result);
@@ -73,10 +70,9 @@ public class AddressController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] Address addresses)
     {
-        addresses.CreatedDate = DateTime.Now;
+        addresses.CreatedDate = DateTime.UtcNow;
         
-        var result = await _context.Addresses.AddAsync(addresses);
-
+        await _context.Addresses.AddAsync(addresses);
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { addresses.Id }, addresses);
@@ -97,7 +93,7 @@ public class AddressController : ControllerBase
         if (!await _context.Addresses.AnyAsync())
             return NotFound();
 
-        addresses.UpdatedDate = DateTime.Now;
+        addresses.UpdatedDate = DateTime.UtcNow;
         //TODO: User updated by.
         
         _context.Entry(addresses).State = EntityState.Modified;

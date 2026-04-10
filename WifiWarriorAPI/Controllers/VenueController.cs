@@ -1,4 +1,3 @@
-using System.Dynamic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WifiWarriorAPI.Data;
@@ -24,10 +23,8 @@ public class VenueController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        if (!await _context.Venues.AnyAsync())
-            return NotFound();
-
-        return Ok(await _context.Venues.ToListAsync());
+        var venues = await _context.Venues.ToListAsync();
+        return Ok(venues);
     }
     
     /// <summary>
@@ -37,12 +34,10 @@ public class VenueController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        if (!await _context.Venues.AnyAsync())
-            return NotFound();
-        
-        var result = _context.Venues.Where(x => x.Id == id).ToListAsync();
+        var result = await _context.Venues
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (result == null)
+        if (result is null)
             return NotFound();
 
         return Ok(result);
@@ -56,7 +51,7 @@ public class VenueController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] Venue venue)
     {
-        venue.CreatedDate = DateTime.Now;
+        venue.CreatedDate = DateTime.UtcNow;
         
         var result = await _context.Venues.AddAsync(venue);
 
@@ -72,15 +67,15 @@ public class VenueController : ControllerBase
     /// <param name="id">The identifier.</param>
     /// <returns>No Content</returns>
     [HttpPut("{id:long}")]
-    public async Task<IActionResult> Put([FromBody] WifiLoginDetails venue, long id)
+    public async Task<IActionResult> Put([FromBody] Venue venue, long id)
     {
         if (id != venue.Id)
             return BadRequest();
 
-        if (!await _context.WifiLoginDetails.AnyAsync())
+        if (!await _context.Venues.AnyAsync())
             return NotFound();
 
-        venue.UpdatedDate = DateTime.Now;
+        venue.UpdatedDate = DateTime.UtcNow;
         //TODO: User updated by.
         
         _context.Entry(venue).State = EntityState.Modified;

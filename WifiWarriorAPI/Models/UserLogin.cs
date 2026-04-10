@@ -24,6 +24,9 @@ public class UserInfo : LoginInfo
     public string? PhoneNumber { get; set; }
 }
 
+/// <summary>
+/// The model for login information.
+/// </summary>
 public class LoginInfo
 {
     /// <summary>

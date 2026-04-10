@@ -1,4 +1,3 @@
-using System.Dynamic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WifiWarriorAPI.Data;
@@ -24,10 +23,8 @@ public class ConnectionTypesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        if (!await _context.ConnectionTypes.AnyAsync())
-            return NotFound();
-        
-        return Ok(await _context.ConnectionTypes.ToListAsync());
+        var connectionTypes = await _context.ConnectionTypes.ToListAsync();
+        return Ok(connectionTypes);
     }
     
     /// <summary>
@@ -41,9 +38,9 @@ public class ConnectionTypesController : ControllerBase
             return NotFound();
 
         var result = await _context.ConnectionTypes
-            .Where(x => x.Id == id).ToListAsync();
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (result == null)
+        if (result is null)
             return NotFound();
         
         return Ok(result);
@@ -57,7 +54,7 @@ public class ConnectionTypesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] ConnectionType connectionType)
     {
-        connectionType.CreatedDate = DateTime.Now;
+        connectionType.CreatedDate = DateTime.UtcNow;
         
         var result = await _context.ConnectionTypes.AddAsync(connectionType);
 
@@ -67,7 +64,7 @@ public class ConnectionTypesController : ControllerBase
     }
 
     /// <summary>
-    /// Update Connection Type .
+    /// Update Connection Type.
     /// </summary>
     /// <param name="connectionType">The Connection Type Updated Object</param>
     /// <param name="id">The identifier.</param>
@@ -81,7 +78,7 @@ public class ConnectionTypesController : ControllerBase
         if (!await _context.ConnectionTypes.AnyAsync())
             return NotFound();
 
-        connectionType.UpdatedDate = DateTime.Now;
+        connectionType.UpdatedDate = DateTime.UtcNow;
         //TODO: User updated by.
         
         _context.Entry(connectionType).State = EntityState.Modified;

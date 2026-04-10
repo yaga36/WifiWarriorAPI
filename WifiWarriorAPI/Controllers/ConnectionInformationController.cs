@@ -47,9 +47,9 @@ public class ConnectionInformationController : ControllerBase
         var result = await _context.ConnectionInformation
             .Include(x => x.ConnectionType)
             .Include(x => x.WifiLoginDetails)
-            .Where(x => x.Id == id).ToListAsync();
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (result == null)
+        if (result is null)
             return NotFound();
 
         return Ok(result);
@@ -63,7 +63,7 @@ public class ConnectionInformationController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] ConnectionInformation connectionInformation)
     {
-        connectionInformation.CreatedDate = DateTime.Now;
+        connectionInformation.CreatedDate = DateTime.UtcNow;
         
         var result = await _context.ConnectionInformation.AddAsync(connectionInformation);
 
@@ -87,7 +87,7 @@ public class ConnectionInformationController : ControllerBase
         if (!await _context.ConnectionInformation.AnyAsync())
             return NotFound();
 
-        connectionInformation.UpdatedDate = DateTime.Now;
+        connectionInformation.UpdatedDate = DateTime.UtcNow;
         //TODO: User updated by.
         
         _context.Entry(connectionInformation).State = EntityState.Modified;
