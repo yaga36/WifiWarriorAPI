@@ -70,6 +70,7 @@ builder.Services.AddScoped<IVenueService, VenueService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
+builder.Services.AddScoped<IConnectionInformationService, ConnectionInformationService>();
 
 var app = builder.Build();
 

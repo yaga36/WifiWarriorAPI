@@ -1,137 +1,161 @@
-using System.Dynamic;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WifiWarriorAPI.Data;
-using WifiWarriorAPI.Models;
+using WifiWarriorAPI.Models.Dtos.ConnectionInformations;
+using WifiWarriorAPI.Services;
 
 namespace WifiWarriorAPI.Controllers;
 
+/// <summary>
+/// API endpoints for managing connection information.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "CanEdit")]
 public class ConnectionInformationController : ControllerBase
 {
-    private readonly ApiDbContext _context;
+    private readonly IConnectionInformationService _service;
 
-    public ConnectionInformationController(ApiDbContext context)
-    {
-        _context = context;
-    }
-    
     /// <summary>
-    /// Gets all connection information from database.
+    /// Initializes a new instance of the <see cref="ConnectionInformationController"/> class.
     /// </summary>
-    /// <returns>All connection information in a list.</returns>
+    /// <param name="service">
+    /// The service used to manage connection information operations.
+    /// </param>
+    public ConnectionInformationController(IConnectionInformationService service)
+    {
+        _service = service;
+    }
+
+    /// <summary>
+    /// Retrieves all connection information records.
+    /// </summary>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// An <see cref="OkObjectResult"/> containing the collection of connection information records.
+    /// </returns>
     [HttpGet]
-    public async Task<IActionResult> Get()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IReadOnlyCollection<ConnectionInformationResponse>))]
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
-
-        if (!await _context.ConnectionInformation.AnyAsync())
-            return NotFound();
-        
-        return Ok(await _context.ConnectionInformation
-            .Include(x => x.ConnectionType)
-            .Include(x => x.WifiLoginDetails).ToListAsync());
-         
+        var rows = await _service.GetAllAsync(cancellationToken);
+        return Ok(rows);
     }
-    
+
     /// <summary>
-    /// Gets connection information by Id from database.
+    /// Retrieves a connection information record by identifier.
     /// </summary>
-    /// <returns>Connection information by Id..</returns>
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id)
+    /// <param name="id">
+    /// The unique identifier of the connection information.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// An <see cref="OkObjectResult"/> containing the record when found; otherwise a <see cref="NotFoundResult"/>.
+    /// </returns>
+    [HttpGet("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConnectionInformationResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
     {
-        if (!await _context.ConnectionInformation.AnyAsync())
-            return NotFound();
-        
-        var result = await _context.ConnectionInformation
-            .Include(x => x.ConnectionType)
-            .Include(x => x.WifiLoginDetails)
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        if (result is null)
-            return NotFound();
-
-        return Ok(result);
+        var row = await _service.GetByIdAsync(id, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
     }
-    
+
     /// <summary>
-    /// Add a new Connection Information object to database.
+    /// Creates a new connection information record.
     /// </summary>
-    /// <param name="connectionInformation">Connection Information Model.</param>
-    /// <returns>Object with new details.</returns>
+    /// <param name="request">
+    /// The create request payload.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="CreatedAtActionResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] ConnectionInformation connectionInformation)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ConnectionInformationResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Post([FromBody] CreateConnectionInformationRequest request, CancellationToken cancellationToken)
     {
-        connectionInformation.CreatedDate = DateTime.UtcNow;
-        
-        var result = await _context.ConnectionInformation.AddAsync(connectionInformation);
+        var result = await _service.CreateAsync(request, cancellationToken);
 
-        await _context.SaveChangesAsync();
+        if (result.Success && result.Value is not null)
+            return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
 
-        return CreatedAtAction(nameof(GetById), new { connectionInformation.Id }, connectionInformation);
+        return result.StatusCode switch
+        {
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
-    /// Update Connection Information .
+    /// Updates an existing connection information record.
     /// </summary>
-    /// <param name="connectionInformation">The Connection Information Updated Object</param>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">
+    /// The unique identifier of the connection information.
+    /// </param>
+    /// <param name="request">
+    /// The update request payload.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpPut("{id:long}")]
-    public async Task<IActionResult> Put([FromBody] ConnectionInformation connectionInformation, long id)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Put(long id, [FromBody] UpdateConnectionInformationRequest request, CancellationToken cancellationToken)
     {
-        if (id != connectionInformation.Id)
-            return BadRequest();
+        var result = await _service.UpdateAsync(id, request, cancellationToken);
 
-        if (!await _context.ConnectionInformation.AnyAsync())
-            return NotFound();
+        if (result.Success)
+            return NoContent();
 
-        connectionInformation.UpdatedDate = DateTime.UtcNow;
-        //TODO: User updated by.
-        
-        _context.Entry(connectionInformation).State = EntityState.Modified;
-
-        try
+        return result.StatusCode switch
         {
-            await _context.SaveChangesAsync();
-        }
-        catch(DbUpdateConcurrencyException)
-        {
-            if (! await _context.ConnectionInformation.AnyAsync(w => w.Id == id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
-
+            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
-    /// Deletes Connection Information row.
+    /// Deletes a connection information record by identifier.
     /// </summary>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">
+    /// The unique identifier of the connection information.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpDelete("{id:long}")]
-    public async Task<IActionResult> Delete(long id)
+    [Authorize(Policy = "CanDelete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
-        if (! await _context.ConnectionInformation.AnyAsync())
-            return NotFound();
+        var result = await _service.DeleteAsync(id, cancellationToken);
 
-        var connectionInformation = await _context.ConnectionInformation.FindAsync(id);
+        if (result.Success)
+            return NoContent();
 
-        if (connectionInformation == null)
-            return NotFound();
-
-        _context.ConnectionInformation.Remove(connectionInformation);
-        await _context.SaveChangesAsync();
-        
-        return NoContent();
+        return result.StatusCode switch
+        {
+            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
-    
 }
