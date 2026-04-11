@@ -1,142 +1,161 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WifiWarriorAPI.Data;
-using WifiWarriorAPI.Models;
+using WifiWarriorAPI.Models.Dtos.Addresses;
+using WifiWarriorAPI.Services;
 
 namespace WifiWarriorAPI.Controllers;
 
-[Authorize]
+/// <summary>
+/// API endpoints for managing addresses.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "CanEdit")]
 public class AddressController : ControllerBase
 {
-    private readonly ApiDbContext _context;
+    private readonly IAddressService _addressService;
 
-    public AddressController(ApiDbContext context)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AddressController"/> class.
+    /// </summary>
+    /// <param name="addressService">
+    /// The address service.
+    /// </param>
+    public AddressController(IAddressService addressService)
     {
-        _context = context;
+        _addressService = addressService;
     }
     
     /// <summary>
-    /// Gets all addresses from database.
+    /// Retrieves all addresses.
     /// </summary>
-    /// <returns>All addresses in a list.</returns>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// An <see cref="OkObjectResult"/> containing the collection of addresses.
+    /// </returns>
     [HttpGet]
-    [Authorize]
-    public async Task<IActionResult> Get()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IReadOnlyCollection<AddressResponse>))]
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
-        var addresses = await _context.Addresses
-            .Include(r => r.Venue)
-            .Include(r => r.ConnectionInformation!)
-                .ThenInclude(ci => ci.ConnectionType)
-            .Include(r => r.ConnectionInformation!)
-                .ThenInclude(ci => ci.WifiLoginDetails)
-            .ToListAsync();
-        
+        var addresses = await _addressService.GetAllAddressesAsync(cancellationToken);
         return Ok(addresses);
     }
     
     /// <summary>
-    /// Gets address by Id from database.
+    /// Retrieves an address by identifier.
     /// </summary>
-    /// <returns>Addresses by Id.</returns>
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id)
+    /// <param name="id">
+    /// The unique identifier of the address.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// An <see cref="OkObjectResult"/> containing the address when found; otherwise a <see cref="NotFoundResult"/>.
+    /// </returns>
+    [HttpGet("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AddressResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
     {
-        if (!await _context.Addresses.AnyAsync())
-            return NotFound();
-
-        var result = await _context.Addresses
-            .Include(r => r.Venue)
-            .Include(r => r.ConnectionInformation!)
-                .ThenInclude(ci => ci.ConnectionType)
-            .Include(r => r.ConnectionInformation!)
-                .ThenInclude(ci => ci.WifiLoginDetails)
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        if (result is null)
-            return NotFound();
-
-        return Ok(result);
-
+        var address = await _addressService.GetAddressByIdAsync(id, cancellationToken);
+        return address is null ? NotFound() : Ok(address);
     }
     
     /// <summary>
-    /// Add a new Address object to database.
+    /// Creates a new address.
     /// </summary>
-    /// <param name="addresses">Address Model.</param>
-    /// <returns>Object with new details.</returns>
+    /// <param name="request">
+    /// The create address request payload.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="CreatedAtActionResult"/> when the address is created successfully; otherwise an error response.
+    /// </returns>
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] Address addresses)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(AddressResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Post([FromBody] CreateAddressRequest request, CancellationToken cancellationToken)
     {
-        addresses.CreatedDate = DateTime.UtcNow;
-        
-        await _context.Addresses.AddAsync(addresses);
-        await _context.SaveChangesAsync();
+        var result = await _addressService.CreateAddressAsync(request, cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { addresses.Id }, addresses);
+        if (result is { Success: true, Value: not null })
+            return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
+
+        return result.StatusCode switch
+        {
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
-    /// Update Address.
+    /// Updates an existing address.
     /// </summary>
-    /// <param name="addresses">The Address Updated Object</param>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">
+    /// The unique identifier of the address.
+    /// </param>
+    /// <param name="request">
+    /// The update address request payload.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when the address is updated successfully; otherwise an error response.
+    /// </returns>
     [HttpPut("{id:long}")]
-    public async Task<IActionResult> Put([FromBody] Address addresses, long id)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Put(long id, [FromBody] UpdateAddressRequest request, CancellationToken cancellationToken)
     {
-        if (id != addresses.Id)
-            return BadRequest();
+        var result = await _addressService.UpdateAddressAsync(id, request, cancellationToken);
 
-        if (!await _context.Addresses.AnyAsync())
-            return NotFound();
+        if (result.Success)
+            return NoContent();
 
-        addresses.UpdatedDate = DateTime.UtcNow;
-        //TODO: User updated by.
-        
-        _context.Entry(addresses).State = EntityState.Modified;
-
-        try
+        return result.StatusCode switch
         {
-            await _context.SaveChangesAsync();
-        }
-        catch(DbUpdateConcurrencyException)
-        {
-            if (! await _context.Addresses.AnyAsync(w => w.Id == id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
-
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
-    /// Deletes Address row.
+    /// Deletes an address by identifier.
     /// </summary>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">
+    /// The unique identifier of the address.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when the address is deleted successfully; otherwise an error response.
+    /// </returns>
     [HttpDelete("{id:long}")]
-    public async Task<IActionResult> Delete(long id)
+    [Authorize(Policy = "CanDelete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
-        if (! await _context.Addresses.AnyAsync())
-            return NotFound();
+        var result = await _addressService.DeleteAddressAsync(id, cancellationToken);
 
-        var addresses = await _context.Addresses.FindAsync(id);
+        if (result.Success)
+            return NoContent();
 
-        if (addresses == null)
-            return NotFound();
-
-        _context.Addresses.Remove(addresses);
-        await _context.SaveChangesAsync();
-        
-        return NoContent();
+        return result.StatusCode switch
+        {
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 }
