@@ -1,125 +1,116 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WifiWarriorAPI.Data;
-using WifiWarriorAPI.Models;
+using WifiWarriorAPI.Models.Dtos.Venues;
+using WifiWarriorAPI.Services;
 
 namespace WifiWarriorAPI.Controllers;
 
+/// <summary>
+/// API endpoints for managing venues.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class VenueController : ControllerBase
 {
-    private readonly ApiDbContext _context;
+    private readonly IVenueService _venueService;
 
-    public VenueController(ApiDbContext context)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="VenueController"/> class.
+    /// </summary>
+    /// <param name="venueService">
+    /// The venue service.
+    /// </param>
+    public VenueController(IVenueService venueService)
     {
-        _context = context;
+        _venueService = venueService;
     }
     
     /// <summary>
-    /// Gets all venues from database.
+    /// Retrieves all venues.
     /// </summary>
-    /// <returns>All venues in a list.</returns>
+    /// <returns>A <see cref="OkObjectResult"/> containing the venue collection.</returns>
     [HttpGet]
-    public async Task<IActionResult> Get()
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IReadOnlyCollection<VenueResponse>))]
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
-        var venues = await _context.Venues.ToListAsync();
+        var venues = await _venueService.GetAllVenuesAsync(cancellationToken);
         return Ok(venues);
     }
-    
+
     /// <summary>
-    /// Venues from database by id.
+    /// Retrieves a venue by identifier.
     /// </summary>
-    /// <returns>Venue by id.</returns>
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id)
+    /// <param name="id">The venue identifier.</param>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>
+    /// A <see cref="OkObjectResult"/> when found; otherwise <see cref="NotFoundResult"/>.
+    /// </returns>
+    [HttpGet("{id:long}")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VenueResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
     {
-        var result = await _context.Venues
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        if (result is null)
-            return NotFound();
-
-        return Ok(result);
+        var venue = await _venueService.GetVenueByIdAsync(id, cancellationToken);
+        return venue is null ? NotFound() : Ok(venue);
     }
-    
+
     /// <summary>
-    /// Add a new Venue object to database.
+    /// Creates a new venue.
     /// </summary>
-    /// <param name="venue">Venue Model.</param>
-    /// <returns>Object with new details.</returns>
+    /// <param name="venueRequest">The create venue request payload.</param>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>A <see cref="CreatedAtActionResult"/> for the created venue.</returns>
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] Venue venue)
+    [Authorize(Policy = "CanSubmit")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(VenueResponse))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Post([FromBody] CreateVenueRequest venueRequest, CancellationToken cancellationToken)
     {
-        venue.CreatedDate = DateTime.UtcNow;
-        
-        var result = await _context.Venues.AddAsync(venue);
-
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetById), new { venue.Id }, venue);
+        var createdVenue = await _venueService.CreateVenueAsync(venueRequest, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { createdVenue.Id }, createdVenue);
     }
 
     /// <summary>
-    /// Update Venue.
+    /// Updates an existing venue.
     /// </summary>
-    /// <param name="venue">The Venue Updated Object</param>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">The venue identifier.</param>
+    /// <param name="venueRequest">The update venue request payload.</param>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when updated; otherwise <see cref="NotFoundResult"/>.
+    /// </returns>
     [HttpPut("{id:long}")]
-    public async Task<IActionResult> Put([FromBody] Venue venue, long id)
+    [Authorize(Policy = "CanEdit")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Put(long id, [FromBody] UpdateVenueRequest venueRequest, CancellationToken cancellationToken)
     {
-        if (id != venue.Id)
-            return BadRequest();
-
-        if (!await _context.Venues.AnyAsync())
-            return NotFound();
-
-        venue.UpdatedDate = DateTime.UtcNow;
-        //TODO: User updated by.
-        
-        _context.Entry(venue).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch(DbUpdateConcurrencyException)
-        {
-            if (! await _context.Venues.AnyAsync(w => w.Id == id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
-
+        var updatedVenue = await _venueService.UpdateVenueAsync(id, venueRequest, cancellationToken);
+        return updatedVenue ? NoContent() : NotFound();
     }
 
     /// <summary>
-    /// Deletes Venue row.
+    /// Deletes a venue by identifier.
     /// </summary>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">The venue identifier.</param>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when deleted; otherwise <see cref="NotFoundResult"/>.
+    /// </returns>
     [HttpDelete("{id:long}")]
-    public async Task<IActionResult> Delete(long id)
+    [Authorize(Policy = "CanDelete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
-        if (! await _context.Venues.AnyAsync())
-            return NotFound();
-
-        var venue = await _context.Venues.FindAsync(id);
-
-        if (venue == null)
-            return NotFound();
-
-        _context.Venues.Remove(venue);
-        await _context.SaveChangesAsync();
-        
-        return NoContent();
+        var deletedVenue = await _venueService.DeleteVenueAsync(id, cancellationToken);
+        return deletedVenue ? NoContent() : NotFound();
     }
-    
 }

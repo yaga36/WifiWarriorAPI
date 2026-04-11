@@ -65,7 +65,7 @@ public class Address : BaseEntity
     /// <summary>
     /// The venue.
     /// </summary>
-    public virtual required Venue Venue { get; set; }
+    public virtual Venue Venue { get; set; } = null!;
     
     /// <summary>
     /// The address connection information.

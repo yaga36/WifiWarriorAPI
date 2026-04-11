@@ -4,6 +4,7 @@ using Microsoft.OpenApi;
 using Serilog;
 using WifiWarriorAPI;
 using WifiWarriorAPI.Data;
+using WifiWarriorAPI.Models;
 using WifiWarriorAPI.Services;
 
 
@@ -39,9 +40,15 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 builder.Services.AddEntityFrameworkNpgsql().AddDbContext<ApiDbContext>(opt => 
     opt.UseNpgsql(builder.Configuration.GetConnectionString("PostgresDbConnection")));
 
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-
 builder.Services.AddAuthentication();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("CanSubmit", policy => 
+        policy.RequireRole(nameof(Role.User), nameof(Role.Moderator), nameof(Role.Administrator)))
+    .AddPolicy("CanEdit", policy => 
+        policy.RequireRole(nameof(Role.Moderator), nameof(Role.Administrator)))
+    .AddPolicy("CanDelete", policy => 
+        policy.RequireRole(nameof(Role.Administrator)));
+
 builder.Services.ConfigureIdentity();
 builder.Services.ConfigureJwt(builder.Configuration);
 
@@ -60,6 +67,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IAuthManager, AuthManager>();
+builder.Services.AddScoped<IVenueService, VenueService>();
 
 var app = builder.Build();
 
@@ -81,3 +89,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program {}

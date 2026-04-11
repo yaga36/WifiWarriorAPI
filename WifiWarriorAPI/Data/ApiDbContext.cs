@@ -42,27 +42,29 @@ public class ApiDbContext: IdentityDbContext<Users>
                 .WithOne()
                 .HasForeignKey<ConnectionInformation>(ci => ci.WifiLoginDetailsId);
         });
+        
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Test") 
+            return;
+        
+        var connectionType = new List<ConnectionType>
+        {
+            new()
+            {
+                Id = 1,
+                Name = "Open"
+            },
+            new()
+            {
+                Id = 2,
+                Name = "Password"
+            },
+            new()
+            {
+                Id = 3,
+                Name = "Login"
+            }
+        };
 
-        var connectionType = new List<ConnectionType>();
-        
-        connectionType.Add(new ConnectionType
-        {
-            Id = 1,
-            Name = "Open"
-        });
-        
-        connectionType.Add(new ConnectionType
-        {
-            Id = 2,
-            Name = "Password"
-        });
-        
-        connectionType.Add(new ConnectionType
-        {
-            Id = 3,
-            Name = "Login"
-        });
-        
         modelBuilder.Entity<ConnectionType>().HasData(connectionType);
 
         modelBuilder.Entity<WifiLoginDetails>().HasData(new WifiLoginDetails
@@ -79,6 +81,12 @@ public class ApiDbContext: IdentityDbContext<Users>
             WifiLoginDetailsId = 1
         });
 
+        modelBuilder.Entity<Venue>().HasData(new Venue
+        {
+            Id = 1,
+            Name = "Venue Name"
+        });
+
         modelBuilder.Entity<Address>().HasData(new Address
         {
             Id = 1,
@@ -91,14 +99,6 @@ public class ApiDbContext: IdentityDbContext<Users>
             Longitude = 0.1,
             VenueId = 1,
             ConnectionInformationId = 1,
-            Venue = new Venue{ Id = 1, Name = "Venue Name" },
         });
-        
-        modelBuilder.Entity<Venue>().HasData(new Venue
-        {
-            Id = 1,
-            Name = "Venue Name"
-        });
-        
     }
 }

@@ -58,16 +58,18 @@ public class AuthManager : IAuthManager
     {
         var claims = new List<Claim>
         {
+            new(JwtRegisteredClaimNames.Sub, user.Id),
             new("name", (user.UserName ?? user.Email) ?? string.Empty)
         };
 
-        var roles = await _userManager.GetRolesAsync(user);
-
-        foreach (var role in roles)
-        {
-            claims.Add(new Claim("roles", role));
-        }
+        if(!string.IsNullOrEmpty(user.Email))
+            claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
         
+        claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
+        
+        var roles = await _userManager.GetRolesAsync(user);
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
         return claims;
     }
 
