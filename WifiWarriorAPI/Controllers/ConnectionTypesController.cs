@@ -1,128 +1,161 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WifiWarriorAPI.Data;
-using WifiWarriorAPI.Models;
+using WifiWarriorAPI.Models.Dtos.ConnectionTypes;
+using WifiWarriorAPI.Services;
 
 namespace WifiWarriorAPI.Controllers;
 
+/// <summary>
+/// API endpoints for managing connection types.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "CanEdit")]
 public class ConnectionTypesController : ControllerBase
 {
-    private readonly ApiDbContext _context;
+    private readonly IConnectionTypeService _service;
 
-    public ConnectionTypesController(ApiDbContext context)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConnectionTypesController"/> class.
+    /// </summary>
+    /// <param name="service">
+    /// The service used to manage connection type operations.
+    /// </param>
+    public ConnectionTypesController(IConnectionTypeService service)
     {
-        _context = context;
+        _service = service;
     }
     
     /// <summary>
-    /// Gets all connection types from database.
+    /// Retrieves all connection types.
     /// </summary>
-    /// <returns>All connection types in a list.</returns>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// An <see cref="OkObjectResult"/> containing the collection of connection types.
+    /// </returns>
     [HttpGet]
-    public async Task<IActionResult> Get()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IReadOnlyCollection<ConnectionTypeResponse>))]
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
-        var connectionTypes = await _context.ConnectionTypes.ToListAsync();
+        var connectionTypes = await _service.GetAllAsync(cancellationToken);
         return Ok(connectionTypes);
     }
     
     /// <summary>
-    /// Connection types from database by Id.
+    /// Retrieves a connection type by identifier.
     /// </summary>
-    /// <returns>Connection types by Id.</returns>
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id)
+    /// <param name="id">
+    /// The unique identifier of the connection type.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// An <see cref="OkObjectResult"/> containing the connection type when found; otherwise a <see cref="NotFoundResult"/>.
+    /// </returns>
+    [HttpGet("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConnectionTypeResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
     {
-        if (!await _context.ConnectionTypes.AnyAsync())
-            return NotFound();
-
-        var result = await _context.ConnectionTypes
-            .FirstOrDefaultAsync(x => x.Id == id);
-
-        if (result is null)
-            return NotFound();
-        
-        return Ok(result);
+        var connectionType = await _service.GetByIdAsync(id, cancellationToken);
+        return connectionType is null ? NotFound() : Ok(connectionType);
     }
     
     /// <summary>
-    /// Add a new Connection Type object to database.
+    /// Creates a new connection type.
     /// </summary>
-    /// <param name="connectionType">Connection Type Model.</param>
-    /// <returns>Object with new details.</returns>
+    /// <param name="request">
+    /// The create request payload.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="CreatedAtActionResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] ConnectionType connectionType)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ConnectionTypeResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Post([FromBody] CreateConnectionTypeRequest request, CancellationToken cancellationToken)
     {
-        connectionType.CreatedDate = DateTime.UtcNow;
-        
-        var result = await _context.ConnectionTypes.AddAsync(connectionType);
+        var result = await _service.CreateAsync(request, cancellationToken);
 
-        await _context.SaveChangesAsync();
+        if (result is { Success: true, Value: not null })
+            return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
 
-        return CreatedAtAction(nameof(GetById), new { connectionType.Id }, connectionType);
+        return result.StatusCode switch
+        {
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
-    /// Update Connection Type.
+    /// Updates an existing connection type.
     /// </summary>
-    /// <param name="connectionType">The Connection Type Updated Object</param>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">
+    /// The unique identifier of the connection type.
+    /// </param>
+    /// <param name="request">
+    /// The update request payload.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpPut("{id:long}")]
-    public async Task<IActionResult> Put([FromBody] ConnectionType connectionType, long id)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Put(long id, [FromBody] UpdateConnectionTypeRequest request, CancellationToken cancellationToken)
     {
-        if (id != connectionType.Id)
-            return BadRequest();
+        var result = await _service.UpdateAsync(id, request, cancellationToken);
 
-        if (!await _context.ConnectionTypes.AnyAsync())
-            return NotFound();
+        if (result.Success)
+            return NoContent();
 
-        connectionType.UpdatedDate = DateTime.UtcNow;
-        //TODO: User updated by.
-        
-        _context.Entry(connectionType).State = EntityState.Modified;
-
-        try
+        return result.StatusCode switch
         {
-            await _context.SaveChangesAsync();
-        }
-        catch(DbUpdateConcurrencyException)
-        {
-            if (! await _context.ConnectionTypes.AnyAsync(w => w.Id == id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
-
+            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
-    /// Deletes Connection Type row.
+    /// Deletes a connection type by identifier.
     /// </summary>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">
+    /// The unique identifier of the connection type.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpDelete("{id:long}")]
-    public async Task<IActionResult> Delete(long id)
+    [Authorize(Policy = "CanDelete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
-        if (! await _context.ConnectionTypes.AnyAsync())
-            return NotFound();
+        var result = await _service.DeleteAsync(id, cancellationToken);
 
-        var connectionType = await _context.ConnectionTypes.FindAsync(id);
+        if (result.Success)
+            return NoContent();
 
-        if (connectionType == null)
-            return NotFound();
-
-        _context.ConnectionTypes.Remove(connectionType);
-        await _context.SaveChangesAsync();
-        
-        return NoContent();
+        return result.StatusCode switch
+        {
+            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
-    
 }

@@ -71,6 +71,7 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IConnectionInformationService, ConnectionInformationService>();
+builder.Services.AddScoped<IConnectionTypeService, ConnectionTypeService>();
 
 var app = builder.Build();
 
