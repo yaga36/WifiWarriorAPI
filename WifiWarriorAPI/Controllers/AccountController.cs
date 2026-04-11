@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using WifiWarriorAPI.Models;
+using WifiWarriorAPI.Models.Dtos.Accounts;
 using WifiWarriorAPI.Services;
 
 namespace WifiWarriorAPI.Controllers;
@@ -11,91 +11,54 @@ namespace WifiWarriorAPI.Controllers;
 [Route("api/[controller]")]
 public class AccountController : ControllerBase
 {
-    private readonly UserManager<Users> _userManager;
-    private readonly IAuthManager _authManager;
-    private readonly ILogger<AccountController> _logger;
+    private readonly IAccountService _accountService;
 
     /// <summary>
     /// Constructor for AccountController.
     /// </summary>
-    /// <param name="userManager">User manager.</param>
-    /// <param name="authManager">Authentication manager.</param>
-    /// <param name="logger">Logger.</param>
-    public AccountController(UserManager<Users> userManager, IAuthManager authManager, ILogger<AccountController> logger)
+    /// <param name="accountService">The account service.</param>
+    public AccountController(IAccountService accountService)
     {
-        _userManager = userManager;
-        _authManager = authManager;
-        _logger = logger;
+        _accountService = accountService;
     }
 
     /// <summary>
     /// Registers a new user account and assigns the default <c>User</c> role.
     /// </summary>
-    /// <param name="user">Registration payload.</param>
+    /// <param name="registerRequest">Registration request payload.</param>
+    /// <param name="cancellationToken">The cancellation token for asynchronous operations.</param>
     /// <returns>
     /// <see cref="StatusCodes.Status202Accepted"/> if the user was registered successfully.
     /// <see cref="StatusCodes.Status400BadRequest"/> if the user was not registered successfully.
     /// <see cref="StatusCodes.Status500InternalServerError"/> if an error occurred during registration.
     /// </returns>
-    [HttpPost]
+    [HttpPost("register")]
     [AllowAnonymous]
-    [Route("register")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] UserInfo user)
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Register([FromBody] RegisterAccountRequest registerRequest, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
+        var result = await _accountService.RegisterAsync(registerRequest, cancellationToken);
+        
+        if (result.Success)
+            return Accepted(result.Value);
+
+        return result.StatusCode switch
         {
-            return BadRequest(ModelState);
-        }
-
-        try
-        {
-            var userIdentity = new Users
-            {
-                UserName = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                NormalizedEmail = user.Email,
-                PhoneNumber = user.PhoneNumber ?? "",
-            };
-
-            var createResult = await _userManager.CreateAsync(userIdentity, user.Password);
-            if (!createResult.Succeeded)
-            {
-                foreach (var error in createResult.Errors)
-                    ModelState.AddModelError(error.Code, error.Description);
-
-                return BadRequest(ModelState);
-            }
-
-            var roleResult = await _userManager.AddToRolesAsync(userIdentity, [nameof(Role.User)]);
-            if (!roleResult.Succeeded) 
-            {
-                foreach(var error in roleResult.Errors)
-                    ModelState.AddModelError(error.Code, error.Description);
-                
-                return BadRequest(ModelState);
-            }
-            
-            return Accepted();
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Something went wrong in the {nameof(Register)}");
-            return Problem($"Something went wrong in the {nameof(Register)}", statusCode: 500);
-        }
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(detail: result.Error,
+                statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
     /// Authenticates a user and returns a JWT token.
     /// </summary>
-    /// <param name="user">Login credentials.</param>
+    /// <param name="loginRequest">Login credentials.</param>
+    /// <param name="cancellationToken">The cancellation token for asynchronous operations.</param>
     /// <returns>
     /// <see cref="StatusCodes.Status202Accepted"/> if the user was authenticated successfully.
-    /// <see cref="StatusCodes.Status400BadRequest"/> if the user was not authenticated successfully.
     /// <see cref="StatusCodes.Status401Unauthorized"/> if the user is not authorized to access the resource.
     /// <see cref="StatusCodes.Status500InternalServerError"/> if an error occurred during authentication.
     /// </returns>
@@ -103,31 +66,22 @@ public class AccountController : ControllerBase
     [AllowAnonymous]
     [Route("login")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Login([FromBody] LoginInfo user)
+    public async Task<IActionResult> Login([FromBody] LoginAccountRequest loginRequest, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var result = await _accountService.LoginAsync(loginRequest, cancellationToken);
+        
+        if (result.Success)
+            return Accepted(result.Value);
 
-        try
+        return result.StatusCode switch
         {
-            var authenticatedUser = await _authManager.ValidateUser(user);
-            
-            if (authenticatedUser is null)
-                return Unauthorized();
-
-            var token = new { Token = await _authManager.CreateToken(authenticatedUser) };
-            return Accepted(token);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in {LoginName}: {ExMessage}", nameof(Login), ex.Message);
-            return Problem($"Something went wrong in the {nameof(Login)}", statusCode: 500);
-        }
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            StatusCodes.Status401Unauthorized => Unauthorized(new { message = result.Error }),
+            _ => Problem(detail: result.Error ?? "Unexpected error",
+                statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
     
     /// <summary>

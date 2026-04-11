@@ -102,7 +102,7 @@ public class VenueControllerTests : IAsyncLifetime
     public async Task Post_ShouldReturnForbidden_WhenRoleCannotSubmit()
     {
         // Arrange
-        var token = CreateTestToken("Test");
+        var token = TestHelpers.CreateTestToken("Test");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         var request = new CreateVenueRequest
@@ -121,7 +121,7 @@ public class VenueControllerTests : IAsyncLifetime
     public async Task Post_ShouldReturnCreated_WhenRoleCanSubmit()
     {
         // Arrange
-        var token = CreateTestToken(nameof(Role.User));
+        var token = TestHelpers.CreateTestToken(nameof(Role.User));
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         var request = new CreateVenueRequest
@@ -158,7 +158,7 @@ public class VenueControllerTests : IAsyncLifetime
     {
         // Arrange
         const long id = 2;
-        var token = CreateTestToken(nameof(Role.Moderator));
+        var token = TestHelpers.CreateTestToken(nameof(Role.Moderator));
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         var request = new UpdateVenueRequest
@@ -178,7 +178,7 @@ public class VenueControllerTests : IAsyncLifetime
     {
         // Arrange
         const long id = 1;
-        var token = CreateTestToken(nameof(Role.Moderator));
+        var token = TestHelpers.CreateTestToken(nameof(Role.Moderator));
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         var request = new UpdateVenueRequest
@@ -211,7 +211,7 @@ public class VenueControllerTests : IAsyncLifetime
     {
         // Arrange
         const long id = 2;
-        var token = CreateTestToken(nameof(Role.Administrator));
+        var token = TestHelpers.CreateTestToken(nameof(Role.Administrator));
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Act
@@ -226,7 +226,7 @@ public class VenueControllerTests : IAsyncLifetime
     {
         // Arrange
         const long id = 1;
-        var token = CreateTestToken(nameof(Role.Administrator));
+        var token = TestHelpers.CreateTestToken(nameof(Role.Administrator));
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         
         // Act
@@ -234,33 +234,5 @@ public class VenueControllerTests : IAsyncLifetime
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-    }
-
-    private static HttpClient CreateClient()
-    {
-        var factory = new CustomWebApplicationFactory();
-        return factory.CreateClient();
-    }
-    
-    private static string CreateTestToken(string role)
-    {
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, "test-user-id"),
-            new Claim(ClaimTypes.Name, "test-user"),
-            new Claim(ClaimTypes.Role, role)
-        };
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestConstants.JwtSecretKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: TestConstants.JwtIssuer,
-            audience: TestConstants.JwtAudience,
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(30),
-            signingCredentials: credentials);
-        
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
