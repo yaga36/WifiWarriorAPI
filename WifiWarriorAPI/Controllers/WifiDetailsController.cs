@@ -1,123 +1,161 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WifiWarriorAPI.Data;
-using WifiWarriorAPI.Models;
+using WifiWarriorAPI.Models.Dtos.WifiDetails;
+using WifiWarriorAPI.Services;
 
 namespace WifiWarriorAPI.Controllers;
 
+/// <summary>
+/// API endpoints for managing Wi-Fi login details.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "CanEdit")]
 public class WifiDetailsController : ControllerBase
 {
-    private readonly ApiDbContext _context;
+    private readonly IWifiDetailsService _service;
     
-    public WifiDetailsController(ApiDbContext context)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WifiDetailsController"/> class.
+    /// </summary>
+    /// <param name="service">
+    /// The service used to manage Wi-Fi details operations.
+    /// </param>
+    public WifiDetailsController(IWifiDetailsService service)
     {
-        _context = context;
+        _service = service;
     }
     
     /// <summary>
-    /// Gets all Wi-Fi details.
+    /// Retrieves all Wi-Fi login details.
     /// </summary>
-    /// <returns>All Wi-Fi details in a list.</returns>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// An <see cref="OkObjectResult"/> containing the collection of Wi-Fi details.
+    /// </returns>
     [HttpGet]
-    public async Task<IActionResult> Get()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IReadOnlyCollection<WifiDetailResponse>))]
+    public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
-        var wifiDetails = await _context.WifiLoginDetails.ToListAsync();
-        return Ok(wifiDetails);
+        var rows = await _service.GetAllAsync(cancellationToken);
+        return Ok(rows);
     }
     
     /// <summary>
-    /// Gets Wi-Fi details by Id.
+    /// Retrieves Wi-Fi login details by identifier.
     /// </summary>
-    /// <returns>Wi-Fi details by Id.</returns>
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id)
+    /// <param name="id">
+    /// The unique identifier of the Wi-Fi details.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// An <see cref="OkObjectResult"/> containing the Wi-Fi details when found; otherwise a <see cref="NotFoundResult"/>.
+    /// </returns>
+    [HttpGet("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WifiDetailResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
     {
-        var result = await _context.WifiLoginDetails.FirstOrDefaultAsync(x => x.Id == id);
-
-        if (result is null)
-            return NotFound();
-
-        return Ok(result);
+        var row = await _service.GetByIdAsync(id, cancellationToken);
+        return row is null ? NotFound() : Ok(row);
     }
 
     /// <summary>
-    /// Add a new Wifi Details object to database.
+    /// Creates new Wi-Fi login details.
     /// </summary>
-    /// <param name="wifiDetails">Wifi Details Model.</param>
-    /// <returns>Object with new details.</returns>
+    /// <param name="request">
+    /// The create request payload.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="CreatedAtActionResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] WifiLoginDetails wifiDetails)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(WifiDetailResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Post([FromBody] CreateWifiDetailRequest request, CancellationToken cancellationToken)
     {
-        wifiDetails.CreatedDate = DateTime.UtcNow;
-        
-        var result = await _context.WifiLoginDetails.AddAsync(wifiDetails);
+        var result = await _service.CreateAsync(request, cancellationToken);
 
-        await _context.SaveChangesAsync();
+        if (result.Success && result.Value is not null)
+            return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
 
-        return CreatedAtAction(nameof(GetById), new { wifiDetails.Id }, wifiDetails);
+        return result.StatusCode switch
+        {
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
-    /// Update Wifi Details .
+    /// Updates existing Wi-Fi login details.
     /// </summary>
-    /// <param name="wifiDetails">The Wifi Details Updated Object</param>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">
+    /// The unique identifier of the Wi-Fi details.
+    /// </param>
+    /// <param name="request">
+    /// The update request payload.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpPut("{id:long}")]
-    public async Task<IActionResult> Put([FromBody] WifiLoginDetails wifiDetails, long id)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Put(long id, [FromBody] UpdateWifiDetailRequest request, CancellationToken cancellationToken)
     {
-        if (id != wifiDetails.Id)
-            return BadRequest();
+        var result = await _service.UpdateAsync(id, request, cancellationToken);
 
-        if (!await _context.WifiLoginDetails.AnyAsync())
-            return NotFound();
+        if (result.Success)
+            return NoContent();
 
-        wifiDetails.UpdatedDate = DateTime.UtcNow;
-        //TODO: User updated by.
-        
-        _context.Entry(wifiDetails).State = EntityState.Modified;
-
-        try
+        return result.StatusCode switch
         {
-            await _context.SaveChangesAsync();
-        }
-        catch(DbUpdateConcurrencyException)
-        {
-            if (! await _context.WifiLoginDetails.AnyAsync(w => w.Id == id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
-
+            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 
     /// <summary>
-    /// Deletes wifi details row.
+    /// Deletes Wi-Fi login details by identifier.
     /// </summary>
-    /// <param name="id">The identifier.</param>
-    /// <returns>No Content</returns>
+    /// <param name="id">
+    /// The unique identifier of the Wi-Fi details.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The cancellation token for the operation.
+    /// </param>
+    /// <returns>
+    /// A <see cref="NoContentResult"/> when successful; otherwise an error response.
+    /// </returns>
     [HttpDelete("{id:long}")]
-    public async Task<IActionResult> Delete(long id)
+    [Authorize(Policy = "CanDelete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
-        if (! await _context.WifiLoginDetails.AnyAsync())
-            return NotFound();
+        var result = await _service.DeleteAsync(id, cancellationToken);
 
-        var wifiDetails = await _context.WifiLoginDetails.FindAsync(id);
+        if (result.Success)
+            return NoContent();
 
-        if (wifiDetails == null)
-            return NotFound();
-
-        _context.WifiLoginDetails.Remove(wifiDetails);
-        await _context.SaveChangesAsync();
-        
-        return NoContent();
+        return result.StatusCode switch
+        {
+            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            _ => Problem(result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
+        };
     }
 }

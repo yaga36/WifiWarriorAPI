@@ -72,6 +72,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IConnectionInformationService, ConnectionInformationService>();
 builder.Services.AddScoped<IConnectionTypeService, ConnectionTypeService>();
+builder.Services.AddScoped<IWifiDetailsService, WifiDetailsService>();
 
 var app = builder.Build();
 

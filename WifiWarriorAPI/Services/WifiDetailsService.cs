@@ -1,0 +1,87 @@
+using Microsoft.EntityFrameworkCore;
+using WifiWarriorAPI.Data;
+using WifiWarriorAPI.Models;
+using WifiWarriorAPI.Models.Dtos.WifiDetails;
+
+namespace WifiWarriorAPI.Services;
+
+/// <inheritdoc />
+public class WifiDetailsService : IWifiDetailsService
+{
+    private readonly ApiDbContext _context;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WifiDetailsService"/> class.
+    /// </summary>
+    /// <param name="context">
+    /// The database context used to access and persist Wi-Fi detail data.
+    /// </param>
+    public WifiDetailsService(ApiDbContext context)
+    {
+        _context = context;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyCollection<WifiDetailResponse>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        var wifiDetails = await _context.WifiLoginDetails
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return wifiDetails.Select(wd => wd.ToResponse()).ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<WifiDetailResponse?> GetByIdAsync(long id, CancellationToken cancellationToken)
+    {
+        var wifiDetail = await _context.WifiLoginDetails
+            .AsNoTracking()
+            .FirstOrDefaultAsync(wd => wd.Id == id, cancellationToken);
+
+        return wifiDetail?.ToResponse();
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceResult<WifiDetailResponse>> CreateAsync(CreateWifiDetailRequest request, CancellationToken cancellationToken)
+    {
+        var entity = new WifiLoginDetails
+        {
+            Ssid = request.Ssid,
+            Password = request.Password,
+            CreatedDate = DateTime.UtcNow
+        };
+
+        _context.WifiLoginDetails.Add(entity);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new ServiceResult<WifiDetailResponse>(true, entity.ToResponse(), StatusCode: StatusCodes.Status201Created);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceResult<object>> UpdateAsync(long id, UpdateWifiDetailRequest request, CancellationToken cancellationToken)
+    {
+        var entity = await _context.WifiLoginDetails.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entity is null)
+            return new ServiceResult<object>(false, Error: "Wi-Fi details not found", StatusCode: StatusCodes.Status404NotFound);
+
+        entity.Ssid = request.Ssid;
+        entity.Password = request.Password;
+        entity.UpdatedDate = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return new ServiceResult<object>(true, StatusCode: StatusCodes.Status204NoContent);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceResult<object>> DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        var entity = await _context.WifiLoginDetails.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entity is null)
+            return new ServiceResult<object>(false, Error: "Wi-Fi details not found", StatusCode: StatusCodes.Status404NotFound);
+
+        _context.WifiLoginDetails.Remove(entity);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new ServiceResult<object>(true, StatusCode: StatusCodes.Status204NoContent);
+    }
+}
