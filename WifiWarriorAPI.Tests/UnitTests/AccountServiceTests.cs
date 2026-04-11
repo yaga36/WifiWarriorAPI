@@ -6,6 +6,7 @@ using Moq;
 using WifiWarriorAPI.Models;
 using WifiWarriorAPI.Models.Dtos.Accounts;
 using WifiWarriorAPI.Services;
+using WifiWarriorAPI.Tests.IntegrationTests.Infrastructure;
 using Xunit;
 
 namespace WifiWarriorAPI.Tests.UnitTests;
@@ -17,7 +18,7 @@ public class AccountServiceTests
     public async Task RegisterAsync_ShouldReturnAccepted_WhenUserCreatedAndRoleAssigned()
     {
         // Arrange
-        var userManager = CreateUserManagerMock();
+        var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
         var logger = new Mock<ILogger<AccountService>>();
 
@@ -70,7 +71,7 @@ public class AccountServiceTests
     public async Task RegisterAsync_ShouldReturnBadRequest_WhenRoleAssignmentFails()
     {
         // Arrange
-        var userManager = CreateUserManagerMock();
+        var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
         var logger = new Mock<ILogger<AccountService>>();
 
@@ -106,7 +107,7 @@ public class AccountServiceTests
     [Fact]
     public async Task RegisterAsync_ShouldReturnBadRequest_WhenCreateUserFails()
     {
-        var userManager = CreateUserManagerMock();
+        var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
         var logger = new Mock<ILogger<AccountService>>();
 
@@ -136,7 +137,7 @@ public class AccountServiceTests
     [Fact]
     public async Task RegisterAsync_ShouldReturnInternalServerError_WhenExceptionThrown()
     {
-        var userManager = CreateUserManagerMock();
+        var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
         var logger = new Mock<ILogger<AccountService>>();
 
@@ -161,7 +162,7 @@ public class AccountServiceTests
     [Fact]
     public async Task LoginAsync_ShouldReturnAcceptedWithToken_WhenCredentialsValid()
     {
-        var userManager = CreateUserManagerMock();
+        var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
         var logger = new Mock<ILogger<AccountService>>();
 
@@ -195,7 +196,7 @@ public class AccountServiceTests
     [Fact]
     public async Task LoginAsync_ShouldReturnUnauthorized_WhenCredentialsInvalid()
     {
-        var userManager = CreateUserManagerMock();
+        var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
         var logger = new Mock<ILogger<AccountService>>();
 
@@ -216,7 +217,7 @@ public class AccountServiceTests
     [Fact]
     public async Task LoginAsync_ShouldReturnInternalServerError_WhenExceptionThrown()
     {
-        var userManager = CreateUserManagerMock();
+        var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
         var logger = new Mock<ILogger<AccountService>>();
 
@@ -232,12 +233,5 @@ public class AccountServiceTests
 
         result.Success.Should().BeFalse();
         result.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
-    }
-    
-    private static Mock<UserManager<Users>> CreateUserManagerMock()
-    {
-        var store = new Mock<IUserStore<Users>>();
-        return new Mock<UserManager<Users>>(
-            store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
     }
 }

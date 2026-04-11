@@ -1,11 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Claims;
-using System.Text;
 using AwesomeAssertions;
-using Microsoft.IdentityModel.Tokens;
 using WifiWarriorAPI.Models;
 using WifiWarriorAPI.Models.Dtos.Venues;
 using WifiWarriorAPI.Tests.IntegrationTests.Infrastructure;

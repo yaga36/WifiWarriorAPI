@@ -35,7 +35,7 @@ public class VenueServiceTests
         
         // Assert
         result.Should().NotBeNull();
-        result!.Name.Should().Be("Seed Venue");
+        result.Name.Should().Be("Seed Venue");
     }
     
     [Fact]

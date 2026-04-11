@@ -68,6 +68,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IAuthManager, AuthManager>();
 builder.Services.AddScoped<IVenueService, VenueService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 

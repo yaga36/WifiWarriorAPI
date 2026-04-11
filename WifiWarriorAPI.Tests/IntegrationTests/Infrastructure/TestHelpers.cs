@@ -1,7 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Moq;
+using WifiWarriorAPI.Models;
 
 namespace WifiWarriorAPI.Tests.IntegrationTests.Infrastructure;
 
@@ -36,5 +39,18 @@ public static class TestHelpers
             signingCredentials: credentials);
         
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+    
+    /// <summary>
+    /// Creates a mock <see cref="UserManager{Users}"/> with minimal dependencies for testing.
+    /// </summary>
+    /// <returns>
+    /// A configured mock of <see cref="UserManager{Users}"/> suitable for unit tests.
+    /// </returns>
+    public static Mock<UserManager<Users>> CreateUserManagerMock()
+    {
+        var store = new Mock<IUserStore<Users>>();
+        return new Mock<UserManager<Users>>(
+            store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
     }
 }
