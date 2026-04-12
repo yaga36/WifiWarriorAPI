@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Serilog;
@@ -65,6 +66,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddDataProtection();
+
+if (builder.Environment.IsProduction())
+{
+    var keysPath = builder.Configuration["DataProtection:KeysPath"]
+        ?? throw new InvalidOperationException("Data protection keys path not set");
+    
+    Directory.CreateDirectory(keysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+}
+
 builder.Services.AddScoped<IAuthManager, AuthManager>();
 builder.Services.AddScoped<IVenueService, VenueService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
@@ -73,6 +86,7 @@ builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<IConnectionInformationService, ConnectionInformationService>();
 builder.Services.AddScoped<IConnectionTypeService, ConnectionTypeService>();
 builder.Services.AddScoped<IWifiDetailsService, WifiDetailsService>();
+builder.Services.AddScoped<ICredentialsProtector, CredentialsProtector>();
 
 var app = builder.Build();
 

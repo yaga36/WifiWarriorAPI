@@ -215,7 +215,7 @@ public class AddressServiceTests
     {
         var venue = new Venue { Id = 1, Name = "Venue A", CreatedDate = DateTime.UtcNow };
         var connectionType = new ConnectionType { Id = 1, Name = "Password", CreatedDate = DateTime.UtcNow };
-        var wifi = new WifiLoginDetails { Id = 1, Ssid = "ssid", Password = "pwd", CreatedDate = DateTime.UtcNow };
+        var wifi = new WifiLoginDetails { Id = 1, Ssid = "ssid", EncryptedPassword = "pwd", CreatedDate = DateTime.UtcNow };
         var connectionInfo = new ConnectionInformation
         {
             Id = 1,

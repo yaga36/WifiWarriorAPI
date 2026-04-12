@@ -173,8 +173,8 @@ public class ConnectionInformationServiceTests
             new ConnectionType { Id = 2, Name = "Login", CreatedDate = DateTime.UtcNow });
 
         context.WifiLoginDetails.AddRange(
-            new WifiLoginDetails { Id = 1, Ssid = "ssid-1", Password = "pwd-1", CreatedDate = DateTime.UtcNow },
-            new WifiLoginDetails { Id = 2, Ssid = "ssid-2", Password = "pwd-2", CreatedDate = DateTime.UtcNow });
+            new WifiLoginDetails { Id = 1, Ssid = "ssid-1", EncryptedPassword = "pwd-1", CreatedDate = DateTime.UtcNow },
+            new WifiLoginDetails { Id = 2, Ssid = "ssid-2", EncryptedPassword = "pwd-2", CreatedDate = DateTime.UtcNow });
 
         var row = new ConnectionInformation
         {

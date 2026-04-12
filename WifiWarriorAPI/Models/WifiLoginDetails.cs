@@ -19,8 +19,8 @@ public class WifiLoginDetails : BaseEntity
     public required string Ssid { get; set; }
     
     /// <summary>
-    /// The wifi login password.
+    /// The encrypted wifi login password.
     /// </summary>
     [MaxLength(100)]
-    public required string Password { get; set; }
+    public required string EncryptedPassword { get; set; }
 }

@@ -9,6 +9,7 @@ namespace WifiWarriorAPI.Services;
 public class WifiDetailsService : IWifiDetailsService
 {
     private readonly ApiDbContext _context;
+    private readonly ICredentialsProtector _protector;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WifiDetailsService"/> class.
@@ -16,9 +17,13 @@ public class WifiDetailsService : IWifiDetailsService
     /// <param name="context">
     /// The database context used to access and persist Wi-Fi detail data.
     /// </param>
-    public WifiDetailsService(ApiDbContext context)
+    /// <param name="protector">
+    /// The credentials protector for encrypting/decrypting passwords.
+    /// </param>
+    public WifiDetailsService(ApiDbContext context, ICredentialsProtector protector)
     {
         _context = context;
+        _protector = protector;
     }
 
     /// <inheritdoc />
@@ -28,7 +33,7 @@ public class WifiDetailsService : IWifiDetailsService
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return wifiDetails.Select(wd => wd.ToResponse()).ToList();
+        return wifiDetails.Select(wd => wd.ToResponse(_protector.Decrypt(wd.EncryptedPassword))).ToList();
     }
 
     /// <inheritdoc />
@@ -37,8 +42,8 @@ public class WifiDetailsService : IWifiDetailsService
         var wifiDetail = await _context.WifiLoginDetails
             .AsNoTracking()
             .FirstOrDefaultAsync(wd => wd.Id == id, cancellationToken);
-
-        return wifiDetail?.ToResponse();
+        
+        return wifiDetail?.ToResponse(_protector.Decrypt(wifiDetail.EncryptedPassword));
     }
 
     /// <inheritdoc />
@@ -47,7 +52,7 @@ public class WifiDetailsService : IWifiDetailsService
         var entity = new WifiLoginDetails
         {
             Ssid = request.Ssid,
-            Password = request.Password,
+            EncryptedPassword = _protector.Encrypt(request.Password),
             CreatedDate = DateTime.UtcNow
         };
 
@@ -65,7 +70,7 @@ public class WifiDetailsService : IWifiDetailsService
             return new ServiceResult<object>(false, Error: "Wi-Fi details not found", StatusCode: StatusCodes.Status404NotFound);
 
         entity.Ssid = request.Ssid;
-        entity.Password = request.Password;
+        entity.EncryptedPassword = _protector.Encrypt(request.Password);
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);

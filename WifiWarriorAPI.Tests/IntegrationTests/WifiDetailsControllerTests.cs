@@ -71,6 +71,38 @@ public class WifiDetailsControllerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetById_ShouldReturnOk_WithDecryptedPassword_WhenWifiDetailsExist_AndRoleCanEdit()
+    {
+        // Arrange
+        var token = TestHelpers.CreateTestToken(nameof(Role.Moderator));
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var createRequest = new CreateWifiDetailRequest
+        {
+            Ssid = $"Guest-{Guid.NewGuid():N}",
+            Password = "secret-for-getbyid"
+        };
+
+        var createResponse = await _client.PostAsJsonAsync("/api/wifidetails", createRequest, TestContext.Current.CancellationToken);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<WifiDetailResponse>(TestContext.Current.CancellationToken);
+        created.Should().NotBeNull();
+
+        // Act
+        var getResponse = await _client.GetAsync($"/api/wifidetails/{created!.Id}", TestContext.Current.CancellationToken);
+
+        // Assert
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var fetched = await getResponse.Content.ReadFromJsonAsync<WifiDetailResponse>(TestContext.Current.CancellationToken);
+        fetched.Should().NotBeNull();
+        fetched.Id.Should().Be(created.Id);
+        fetched.Ssid.Should().Be(createRequest.Ssid);
+        fetched.Password.Should().Be(createRequest.Password);
+    }
+    
+    [Fact]
     public async Task Post_ShouldReturnUnauthorized_WhenNoToken()
     {
         // Arrange
@@ -108,6 +140,15 @@ public class WifiDetailsControllerTests : IAsyncLifetime
         var created = await response.Content.ReadFromJsonAsync<WifiDetailResponse>(TestContext.Current.CancellationToken);
         created.Should().NotBeNull();
         created!.Ssid.Should().Be(request.Ssid);
+        created.Password.Should().Be(request.Password);
+        
+        var getResponse = await _client.GetAsync($"/api/wifidetails/{created.Id}", TestContext.Current.CancellationToken);
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var fetched = await getResponse.Content.ReadFromJsonAsync<WifiDetailResponse>(TestContext.Current.CancellationToken);
+        fetched.Should().NotBeNull();
+        fetched.Password.Should().NotBeNull();
+        fetched.Password.Should().Be(request.Password);
     }
 
     [Fact]
@@ -130,6 +171,46 @@ public class WifiDetailsControllerTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task Put_ShouldReturnNoContent_AndPersistUpdatedPassword_WhenRoleCanEdit()
+    {
+        // Arrange
+        var token = TestHelpers.CreateTestToken(nameof(Role.Moderator));
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var createRequest = new CreateWifiDetailRequest
+        {
+            Ssid = $"Guest-{Guid.NewGuid():N}",
+            Password = "initial-secret"
+        };
+
+        var createResponse = await _client.PostAsJsonAsync("/api/wifidetails", createRequest, TestContext.Current.CancellationToken);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<WifiDetailResponse>(TestContext.Current.CancellationToken);
+        created.Should().NotBeNull();
+
+        var updateRequest = new UpdateWifiDetailRequest
+        {
+            Ssid = "updated-ssid",
+            Password = "updated-secret"
+        };
+
+        // Act
+        var putResponse = await _client.PutAsJsonAsync($"/api/wifidetails/{created.Id}", updateRequest, TestContext.Current.CancellationToken);
+
+        // Assert
+        putResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var getResponse = await _client.GetAsync($"/api/wifidetails/{created.Id}", TestContext.Current.CancellationToken);
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var fetched = await getResponse.Content.ReadFromJsonAsync<WifiDetailResponse>(TestContext.Current.CancellationToken);
+        fetched.Should().NotBeNull();
+        fetched.Ssid.Should().Be(updateRequest.Ssid);
+        fetched.Password.Should().Be(updateRequest.Password);
+    }
+    
     [Fact]
     public async Task Delete_ShouldReturnForbidden_WhenRoleCannotDelete()
     {

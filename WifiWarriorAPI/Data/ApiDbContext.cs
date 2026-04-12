@@ -71,7 +71,7 @@ public class ApiDbContext: IdentityDbContext<Users>
         {
             Id = 1,
             Ssid = "SSID",
-            Password = "Password",
+            EncryptedPassword = "Password",
         });
 
         modelBuilder.Entity<ConnectionInformation>().HasData(new ConnectionInformation
