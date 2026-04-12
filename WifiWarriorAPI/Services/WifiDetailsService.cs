@@ -59,7 +59,7 @@ public class WifiDetailsService : IWifiDetailsService
         _context.WifiLoginDetails.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new ServiceResult<WifiDetailResponse>(true, entity.ToResponse(), StatusCode: StatusCodes.Status201Created);
+        return new ServiceResult<WifiDetailResponse>(true, entity.ToResponse(request.Password), StatusCode: StatusCodes.Status201Created);
     }
 
     /// <inheritdoc />
