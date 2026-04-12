@@ -2,6 +2,10 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using AwesomeAssertions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using WifiWarriorAPI.Data;
 using WifiWarriorAPI.Models;
 using WifiWarriorAPI.Models.Dtos.Accounts;
 using WifiWarriorAPI.Tests.IntegrationTests.Infrastructure;
@@ -207,6 +211,36 @@ public class AccountControllerTests : IAsyncLifetime
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+    
+    [Fact]
+    public async Task GetById_ShouldReturnProblemDetails500_WhenUnhandledExceptionOccurs()
+    {
+        // Arrange
+        var token = TestHelpers.CreateTestToken(nameof(Role.Moderator));
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApiDbContext>();
+        context.WifiLoginDetails.Add(new WifiLoginDetails
+        {
+            Id = 12345,
+            Ssid = "broken",
+            EncryptedPassword = "not-a-valid-protected-value",
+            CreatedDate = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var response = await _client.GetAsync("/api/wifidetails/12345", TestContext.Current.CancellationToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        response.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+
+        var body = await response.Content.ReadFromJsonAsync<ProblemDetails>(TestContext.Current.CancellationToken);
+        body.Should().NotBeNull();
+        body.Status.Should().Be(StatusCodes.Status500InternalServerError);
     }
     
 }

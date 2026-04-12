@@ -1,7 +1,6 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
 using Moq;
 using WifiWarriorAPI.Models;
 using WifiWarriorAPI.Models.Dtos.Accounts;
@@ -20,7 +19,6 @@ public class AccountServiceTests
         // Arrange
         var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
-        var logger = new Mock<ILogger<AccountService>>();
 
         userManager
             .Setup(x => x.CreateAsync(It.IsAny<Users>(), It.IsAny<string>()))
@@ -32,7 +30,7 @@ public class AccountServiceTests
                 It.Is<IEnumerable<string>>(roles => roles.Contains(nameof(Role.User)))))
             .ReturnsAsync(IdentityResult.Success);
 
-        var sut = new AccountService(userManager.Object, authManager.Object, logger.Object);
+        var sut = new AccountService(userManager.Object, authManager.Object);
 
         var request = new RegisterAccountRequest
         {
@@ -73,7 +71,6 @@ public class AccountServiceTests
         // Arrange
         var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
-        var logger = new Mock<ILogger<AccountService>>();
 
         userManager
             .Setup(x => x.CreateAsync(It.IsAny<Users>(), It.IsAny<string>()))
@@ -85,7 +82,7 @@ public class AccountServiceTests
                 It.Is<IEnumerable<string>>(roles => roles.Contains(nameof(Role.User)))))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Invalid role" }));
 
-        var sut = new AccountService(userManager.Object, authManager.Object, logger.Object);
+        var sut = new AccountService(userManager.Object, authManager.Object);
 
         var request = new RegisterAccountRequest
         {
@@ -109,13 +106,12 @@ public class AccountServiceTests
     {
         var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
-        var logger = new Mock<ILogger<AccountService>>();
 
         userManager
             .Setup(x => x.CreateAsync(It.IsAny<Users>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Duplicate email" }));
 
-        var sut = new AccountService(userManager.Object, authManager.Object, logger.Object);
+        var sut = new AccountService(userManager.Object, authManager.Object);
 
         var result = await sut.RegisterAsync(new RegisterAccountRequest
         {
@@ -133,21 +129,20 @@ public class AccountServiceTests
                 It.IsAny<IEnumerable<string>>()),
             Times.Never);
     }
-    
+
     [Fact]
-    public async Task RegisterAsync_ShouldReturnInternalServerError_WhenExceptionThrown()
+    public async Task RegisterAsync_ShouldThrow_WhenDependencyThrows()
     {
         var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
-        var logger = new Mock<ILogger<AccountService>>();
 
         userManager
             .Setup(x => x.CreateAsync(It.IsAny<Users>(), It.IsAny<string>()))
-            .ThrowsAsync(new  Exception("Something went terribly wrong"));
+            .ThrowsAsync(new Exception("Something went terribly wrong"));
 
-        var sut = new AccountService(userManager.Object, authManager.Object, logger.Object);
+        var sut = new AccountService(userManager.Object, authManager.Object);
 
-        var result = await sut.RegisterAsync(new RegisterAccountRequest
+        var act = () => sut.RegisterAsync(new RegisterAccountRequest
         {
             FirstName = "John",
             LastName = "Doe",
@@ -155,16 +150,16 @@ public class AccountServiceTests
             Password = "P@ssw0rd123!"
         }, TestContext.Current.CancellationToken);
 
-        result.Success.Should().BeFalse();
-        result.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+        await act.Should().ThrowAsync<Exception>()
+            .WithMessage("Something went terribly wrong");
+        
     }
-    
+
     [Fact]
     public async Task LoginAsync_ShouldReturnAcceptedWithToken_WhenCredentialsValid()
     {
         var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
-        var logger = new Mock<ILogger<AccountService>>();
 
         var user = new Users
         {
@@ -181,7 +176,7 @@ public class AccountServiceTests
             .Setup(x => x.CreateToken(It.IsAny<Users>()))
             .ReturnsAsync("test-jwt-token");
         
-        var sut = new AccountService(userManager.Object, authManager.Object, logger.Object);
+        var sut = new AccountService(userManager.Object, authManager.Object);
 
         var result = await sut.LoginAsync(
             new LoginAccountRequest { Email = "john.doe@example.com", Password = "P@ssword1!" },
@@ -198,13 +193,12 @@ public class AccountServiceTests
     {
         var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
-        var logger = new Mock<ILogger<AccountService>>();
 
         authManager
             .Setup(x => x.ValidateUser(It.IsAny<LoginInfo>()))
             .ReturnsAsync((Users?)null);
 
-        var sut = new AccountService(userManager.Object, authManager.Object, logger.Object);
+        var sut = new AccountService(userManager.Object, authManager.Object);
 
         var result = await sut.LoginAsync(
             new LoginAccountRequest { Email = "a@b.com", Password = "bad" },
@@ -215,23 +209,21 @@ public class AccountServiceTests
     }
     
     [Fact]
-    public async Task LoginAsync_ShouldReturnInternalServerError_WhenExceptionThrown()
+    public async Task LoginAsync_ShouldThrow_WhenDependencyThrows()
     {
         var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
-        var logger = new Mock<ILogger<AccountService>>();
 
         authManager
             .Setup(x => x.ValidateUser(It.IsAny<LoginInfo>()))
             .ThrowsAsync(new Exception("Something went terribly wrong"));
 
-        var sut = new AccountService(userManager.Object, authManager.Object, logger.Object);
+        var sut = new AccountService(userManager.Object, authManager.Object);
 
-        var result = await sut.LoginAsync(
+        var act = () => sut.LoginAsync(
             new LoginAccountRequest { Email = "a@b.com", Password = "bad" },
             TestContext.Current.CancellationToken);
 
-        result.Success.Should().BeFalse();
-        result.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+        await act.Should().ThrowAsync<Exception>().WithMessage("Something went terribly wrong");
     }
 }

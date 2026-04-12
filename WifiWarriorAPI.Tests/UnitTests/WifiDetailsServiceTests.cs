@@ -122,7 +122,10 @@ public class WifiDetailsServiceTests
         result.StatusCode.Should().Be(StatusCodes.Status201Created);
         result.Value.Should().NotBeNull();
         result.Value!.Ssid.Should().Be("Guest");
-        result.Value.Password.Should().Be(encryptedPassword);
+        result.Value.Password.Should().Be(password);
+        
+        var saved = await context.WifiLoginDetails.SingleAsync(TestContext.Current.CancellationToken);
+        saved.EncryptedPassword.Should().Be(encryptedPassword);
         
         _mockCredentialsProtector.Verify(x => x.Encrypt(password), Times.Once);
     }

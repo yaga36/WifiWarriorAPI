@@ -83,7 +83,7 @@ public class WifiDetailsController : ControllerBase
     {
         var result = await _service.CreateAsync(request, cancellationToken);
 
-        if (result.Success && result.Value is not null)
+        if (result is { Success: true, Value: not null })
             return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
 
         return result.StatusCode switch

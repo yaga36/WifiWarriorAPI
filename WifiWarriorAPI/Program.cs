@@ -4,6 +4,7 @@ using Microsoft.OpenApi;
 using Serilog;
 using WifiWarriorAPI;
 using WifiWarriorAPI.Data;
+using WifiWarriorAPI.Infrastructure;
 using WifiWarriorAPI.Models;
 using WifiWarriorAPI.Services;
 
@@ -78,6 +79,9 @@ if (builder.Environment.IsProduction())
         .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 }
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddScoped<IAuthManager, AuthManager>();
 builder.Services.AddScoped<IVenueService, VenueService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
@@ -96,6 +100,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
