@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
-using Serilog;
 using WifiWarriorAPI;
 using WifiWarriorAPI.Data;
 using WifiWarriorAPI.Infrastructure;
@@ -10,10 +9,6 @@ using WifiWarriorAPI.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Host.UseSerilog((ctx, lc) => lc
-    .WriteTo.Console()
-);
 
 // Add services to the container.
 builder.Services.AddControllers();
