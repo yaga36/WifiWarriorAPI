@@ -32,7 +32,7 @@ public class AccountControllerTests : IAsyncLifetime
     }
     
     [Fact]
-    public async Task Register_ShouldReturnAccepted_WhenPayloadIsValid()
+    public async Task Register_ShouldReturnCreated_WhenPayloadIsValid()
     {
         // Arrange
         var request = new RegisterAccountRequest
@@ -51,7 +51,7 @@ public class AccountControllerTests : IAsyncLifetime
             TestContext.Current.CancellationToken);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
     
     [Fact]
@@ -79,7 +79,7 @@ public class AccountControllerTests : IAsyncLifetime
     }
     
     [Fact]
-    public async Task Login_ShouldReturnAccepted_WithToken_WhenCredentialsAreValid()
+    public async Task Login_ShouldReturnOk_WithToken_WhenCredentialsAreValid()
     {
         // Arrange
         var email = $"john.{Guid.NewGuid():N}@example.com";
@@ -108,8 +108,8 @@ public class AccountControllerTests : IAsyncLifetime
         var loginResponse = await _client.PostAsJsonAsync("/api/account/login", login,  TestContext.Current.CancellationToken);
         
         // Assert
-        registerResponse.StatusCode.Should().Be(HttpStatusCode.Accepted);
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var loginResponseObject = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>(TestContext.Current.CancellationToken);
         loginResponseObject.Should().NotBeNull();
         loginResponseObject.AccessToken.Should().NotBeEmpty();
@@ -167,7 +167,7 @@ public class AccountControllerTests : IAsyncLifetime
         var loginResponse = await _client.PostAsJsonAsync("/api/account/login", login,  TestContext.Current.CancellationToken);
         
         // Assert
-        registerResponse.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         loginResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
     

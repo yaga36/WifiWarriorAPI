@@ -14,7 +14,7 @@ public class AccountServiceTests
 {
     
     [Fact]
-    public async Task RegisterAsync_ShouldReturnAccepted_WhenUserCreatedAndRoleAssigned()
+    public async Task RegisterAsync_ShouldReturnCreated_WhenUserCreatedAndRoleAssigned()
     {
         // Arrange
         var userManager = TestHelpers.CreateUserManagerMock();
@@ -46,7 +46,7 @@ public class AccountServiceTests
 
         // Assert
         result.Success.Should().BeTrue();
-        result.StatusCode.Should().Be(StatusCodes.Status202Accepted);
+        result.StatusCode.Should().Be(StatusCodes.Status201Created);
 
         userManager.Verify(
             x => x.CreateAsync(
@@ -156,7 +156,7 @@ public class AccountServiceTests
     }
 
     [Fact]
-    public async Task LoginAsync_ShouldReturnAcceptedWithToken_WhenCredentialsValid()
+    public async Task LoginAsync_ShouldReturnOkWithToken_WhenCredentialsValid()
     {
         var userManager = TestHelpers.CreateUserManagerMock();
         var authManager = new Mock<IAuthManager>();
@@ -183,7 +183,7 @@ public class AccountServiceTests
             TestContext.Current.CancellationToken);
 
         result.Success.Should().BeTrue();
-        result.StatusCode.Should().Be(StatusCodes.Status202Accepted);
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().NotBeNull();
         result.Value.AccessToken.Should().Be("test-jwt-token");
     }

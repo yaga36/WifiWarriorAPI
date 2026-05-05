@@ -47,7 +47,7 @@ public class AccountService : IAccountService
                 Error: string.Join("; ", roleResult.Errors.Select(e => e.Description)),
                 StatusCode: StatusCodes.Status400BadRequest);
 
-        return new ServiceResult<object>(true, Value: null, StatusCode: StatusCodes.Status202Accepted);
+        return new ServiceResult<object>(true, Value: null, StatusCode: StatusCodes.Status201Created);
     }
 
     public async Task<ServiceResult<LoginResponse>> LoginAsync(LoginAccountRequest loginRequest,
@@ -67,6 +67,6 @@ public class AccountService : IAccountService
 
         var accessToken = await _authManager.CreateToken(authenticatedUser);
         return new ServiceResult<LoginResponse>(true, new LoginResponse { AccessToken = accessToken },
-            StatusCode: StatusCodes.Status202Accepted);
+            StatusCode: StatusCodes.Status200OK);
     }
 }

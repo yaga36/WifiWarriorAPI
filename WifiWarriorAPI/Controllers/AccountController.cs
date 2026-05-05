@@ -28,13 +28,13 @@ public class AccountController : ControllerBase
     /// <param name="registerRequest">Registration request payload.</param>
     /// <param name="cancellationToken">The cancellation token for asynchronous operations.</param>
     /// <returns>
-    /// <see cref="StatusCodes.Status202Accepted"/> if the user was registered successfully.
+    /// <see cref="StatusCodes.Status201Created"/> if the user was registered successfully.
     /// <see cref="StatusCodes.Status400BadRequest"/> if the user was not registered successfully.
     /// <see cref="StatusCodes.Status500InternalServerError"/> if an error occurred during registration.
     /// </returns>
     [HttpPost("register")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Register([FromBody] RegisterAccountRequest registerRequest, CancellationToken cancellationToken)
@@ -42,7 +42,7 @@ public class AccountController : ControllerBase
         var result = await _accountService.RegisterAsync(registerRequest, cancellationToken);
         
         if (result.Success)
-            return Accepted(result.Value);
+            return StatusCode(StatusCodes.Status201Created, result.Value);
 
         return result.StatusCode switch
         {
@@ -58,14 +58,14 @@ public class AccountController : ControllerBase
     /// <param name="loginRequest">Login credentials.</param>
     /// <param name="cancellationToken">The cancellation token for asynchronous operations.</param>
     /// <returns>
-    /// <see cref="StatusCodes.Status202Accepted"/> if the user was authenticated successfully.
+    /// <see cref="StatusCodes.Status200OK"/> if the user was authenticated successfully.
     /// <see cref="StatusCodes.Status401Unauthorized"/> if the user is not authorized to access the resource.
     /// <see cref="StatusCodes.Status500InternalServerError"/> if an error occurred during authentication.
     /// </returns>
     [HttpPost]
     [AllowAnonymous]
     [Route("login")]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Login([FromBody] LoginAccountRequest loginRequest, CancellationToken cancellationToken)
@@ -73,7 +73,7 @@ public class AccountController : ControllerBase
         var result = await _accountService.LoginAsync(loginRequest, cancellationToken);
         
         if (result.Success)
-            return Accepted(result.Value);
+            return Ok(result.Value);
 
         return result.StatusCode switch
         {
