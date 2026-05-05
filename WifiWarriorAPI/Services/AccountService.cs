@@ -32,7 +32,7 @@ public class AccountService : IAccountService
             LastName = registerRequest.LastName,
             Email = registerRequest.Email,
             NormalizedEmail = registerRequest.Email.ToUpperInvariant(),
-            PhoneNumber = registerRequest.PhoneNumber
+            PhoneNumber = registerRequest.PhoneNumber ?? string.Empty,
         };
 
         var createResult = await _userManager.CreateAsync(user, registerRequest.Password);

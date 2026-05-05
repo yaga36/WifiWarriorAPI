@@ -17,4 +17,9 @@ public class ConnectionType : BaseEntity
     /// </summary>
     [MaxLength(50)]
     public required string Name { get; set; }
+
+    /// <summary>
+    /// The connection information rows that use this type.
+    /// </summary>
+    public virtual ICollection<ConnectionInformation> ConnectionInformations { get; set; } = [];
 }

@@ -1,3 +1,4 @@
+using WifiWarriorAPI.Models;
 using WifiWarriorAPI.Models.Dtos.Venues;
 
 namespace WifiWarriorAPI.Services;
@@ -15,12 +16,37 @@ public interface IVenueService
     Task<IReadOnlyCollection<VenueResponse>> GetAllVenuesAsync(CancellationToken cancellationToken);
 
     /// <summary>
+    /// Gets all full venue setups.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A read-only collection of aggregate venue setups.</returns>
+    Task<IReadOnlyCollection<VenueSetupResponse>> GetAllVenueSetupsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets a full venue setup by venue identifier.
+    /// </summary>
+    /// <param name="id">The venue identifier.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The aggregate venue setup when found; otherwise <see langword="null"/>.</returns>
+    Task<VenueSetupResponse?> GetVenueSetupByIdAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Gets venue by identifier.
     /// </summary>
     /// <param name="id">The venue identifier.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The venue when found; otherwise <see langword="null"/>.</returns>
     Task<VenueResponse?> GetVenueByIdAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Creates a full venue setup in a single request.
+    /// </summary>
+    /// <param name="request">The aggregate venue setup request.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>
+    /// The created aggregate response when successful; otherwise an error result.
+    /// </returns>
+    Task<ServiceResult<VenueSetupResponse>> CreateVenueSetupAsync(CreateVenueSetupRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Creates a new venue.

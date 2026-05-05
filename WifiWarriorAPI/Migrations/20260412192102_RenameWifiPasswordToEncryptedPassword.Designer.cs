@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WifiWarriorAPI.Data;
@@ -11,9 +12,11 @@ using WifiWarriorAPI.Data;
 namespace WifiWarriorAPI.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    partial class ApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260412192102_RenameWifiPasswordToEncryptedPassword")]
+    partial class RenameWifiPasswordToEncryptedPassword
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -256,7 +259,7 @@ namespace WifiWarriorAPI.Migrations
                             ConnectionInformationId = 1L,
                             County = "County",
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 23, 18, 33, 25, 0, DateTimeKind.Utc),
+                            CreatedDate = new DateTime(2026, 4, 12, 19, 21, 2, 251, DateTimeKind.Utc).AddTicks(8380),
                             Latitude = 0.10000000000000001,
                             Longitude = 0.10000000000000001,
                             Postcode = "Postcode",
@@ -299,7 +302,8 @@ namespace WifiWarriorAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ConnectionTypeId");
+                    b.HasIndex("ConnectionTypeId")
+                        .IsUnique();
 
                     b.HasIndex("WifiLoginDetailsId")
                         .IsUnique();
@@ -313,7 +317,7 @@ namespace WifiWarriorAPI.Migrations
                             BaseEntityId = 0L,
                             ConnectionTypeId = 2L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 23, 18, 33, 25, 0, DateTimeKind.Utc),
+                            CreatedDate = new DateTime(2026, 4, 12, 19, 21, 2, 251, DateTimeKind.Utc).AddTicks(6590),
                             Status = 1,
                             WifiLoginDetailsId = 1L
                         });
@@ -360,7 +364,7 @@ namespace WifiWarriorAPI.Migrations
                             Id = 1L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 23, 18, 33, 25, 0, DateTimeKind.Utc),
+                            CreatedDate = new DateTime(2026, 4, 12, 19, 21, 2, 251, DateTimeKind.Utc).AddTicks(4060),
                             Name = "Open",
                             Status = 1
                         },
@@ -369,7 +373,7 @@ namespace WifiWarriorAPI.Migrations
                             Id = 2L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 23, 18, 33, 25, 0, DateTimeKind.Utc),
+                            CreatedDate = new DateTime(2026, 4, 12, 19, 21, 2, 251, DateTimeKind.Utc).AddTicks(4380),
                             Name = "Password",
                             Status = 1
                         },
@@ -378,7 +382,7 @@ namespace WifiWarriorAPI.Migrations
                             Id = 3L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 23, 18, 33, 25, 0, DateTimeKind.Utc),
+                            CreatedDate = new DateTime(2026, 4, 12, 19, 21, 2, 251, DateTimeKind.Utc).AddTicks(4380),
                             Name = "Login",
                             Status = 1
                         });
@@ -499,7 +503,7 @@ namespace WifiWarriorAPI.Migrations
                             Id = 1L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 23, 18, 33, 25, 0, DateTimeKind.Utc),
+                            CreatedDate = new DateTime(2026, 4, 12, 19, 21, 2, 251, DateTimeKind.Utc).AddTicks(7330),
                             Name = "Venue Name",
                             Status = 1
                         });
@@ -551,8 +555,8 @@ namespace WifiWarriorAPI.Migrations
                             Id = 1L,
                             BaseEntityId = 0L,
                             CreatedById = 1L,
-                            CreatedDate = new DateTime(2022, 11, 23, 18, 33, 25, 0, DateTimeKind.Utc),
-                            EncryptedPassword = "v1CfDJ8FTwavPEwcdHk0Pip-ksCds6IVxwCVmb_29WSFEv0MzB1syg5d5KCrs4B4BEKvSxoh2znT1_HuQcHtrOrAcwolie1Hlp7bVV6tcJ0ugKPV7GHOb_wr5QXJIWI3DBWjVRN_Cp0NUR6MWZvN5weJnYVrA",
+                            CreatedDate = new DateTime(2026, 4, 12, 19, 21, 2, 251, DateTimeKind.Utc).AddTicks(5730),
+                            EncryptedPassword = "Password",
                             Ssid = "SSID",
                             Status = 1
                         });
@@ -629,8 +633,8 @@ namespace WifiWarriorAPI.Migrations
             modelBuilder.Entity("WifiWarriorAPI.Models.ConnectionInformation", b =>
                 {
                     b.HasOne("WifiWarriorAPI.Models.ConnectionType", "ConnectionType")
-                        .WithMany("ConnectionInformations")
-                        .HasForeignKey("ConnectionTypeId")
+                        .WithOne()
+                        .HasForeignKey("WifiWarriorAPI.Models.ConnectionInformation", "ConnectionTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -641,11 +645,6 @@ namespace WifiWarriorAPI.Migrations
                     b.Navigation("ConnectionType");
 
                     b.Navigation("WifiLoginDetails");
-                });
-
-            modelBuilder.Entity("WifiWarriorAPI.Models.ConnectionType", b =>
-                {
-                    b.Navigation("ConnectionInformations");
                 });
 #pragma warning restore 612, 618
         }

@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using AwesomeAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using WifiWarriorAPI.Data;
 using WifiWarriorAPI.Models;
 using WifiWarriorAPI.Models.Dtos.Venues;
 using WifiWarriorAPI.Tests.IntegrationTests.Infrastructure;
@@ -79,6 +81,48 @@ public class VenueControllerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetFullById_ShouldReturnOk_WhenAggregateExists()
+    {
+        // Arrange & Act
+        var response = await _client.GetAsync("/api/venue/full/1", TestContext.Current.CancellationToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var venueSetup = await response.Content.ReadFromJsonAsync<VenueSetupResponse>(TestContext.Current.CancellationToken);
+        venueSetup.Should().NotBeNull();
+        venueSetup!.Venue.Name.Should().Be("Seed Venue");
+        venueSetup.Address.AddressLine1.Should().Be("Seed Address");
+        venueSetup.Connection.ConnectionTypeName.Should().Be("Open");
+        venueSetup.WifiDetails.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetFull_ShouldReturnAllAggregates_WithoutNPlusOneCalls()
+    {
+        // Arrange & Act
+        var response = await _client.GetAsync("/api/venue/full", TestContext.Current.CancellationToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var venueSetups = await response.Content.ReadFromJsonAsync<List<VenueSetupResponse>>(TestContext.Current.CancellationToken);
+        venueSetups.Should().NotBeNull();
+        venueSetups.Should().ContainSingle();
+        venueSetups!.Single().Venue.Name.Should().Be("Seed Venue");
+        venueSetups.Single().Address.AddressLine1.Should().Be("Seed Address");
+        venueSetups.Single().Connection.ConnectionTypeName.Should().Be("Open");
+    }
+
+    [Fact]
+    public async Task GetFullById_ShouldReturnNotFound_WhenAggregateDoesNotExist()
+    {
+        // Arrange & Act
+        var response = await _client.GetAsync("/api/venue/full/999", TestContext.Current.CancellationToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task Post_ShouldReturnUnauthorised_WhenNoToken()
     {
         // Arrange
@@ -130,6 +174,86 @@ public class VenueControllerTests : IAsyncLifetime
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task PostFull_ShouldReturnCreated_AndPersistAggregate_WhenRoleCanSubmit()
+    {
+        // Arrange
+        var token = TestHelpers.CreateTestToken(nameof(Role.User));
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var request = new CreateVenueSetupRequest
+        {
+            VenueName = "Onboarded Venue",
+            Address = new CreateVenueSetupAddressRequest
+            {
+                AddressLine1 = "10 Main Road",
+                Area = "Town Centre",
+                Postcode = "AB12CD"
+            },
+            Connection = new CreateVenueSetupConnectionRequest
+            {
+                ConnectionTypeId = 2,
+                Ssid = "GuestWifi",
+                Password = "supersecret"
+            }
+        };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/venue/full", request, TestContext.Current.CancellationToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var payload = await response.Content.ReadFromJsonAsync<VenueSetupResponse>(TestContext.Current.CancellationToken);
+        payload.Should().NotBeNull();
+        payload!.Venue.Name.Should().Be("Onboarded Venue");
+        payload.Address.AddressLine1.Should().Be("10 Main Road");
+        payload.Connection.ConnectionTypeId.Should().Be(2);
+        payload.WifiDetails.Should().NotBeNull();
+        payload.WifiDetails!.Ssid.Should().Be("GuestWifi");
+        payload.WifiDetails.Password.Should().Be("supersecret");
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApiDbContext>();
+        db.Venues.Should().ContainSingle(x => x.Name == "Onboarded Venue");
+        db.ConnectionInformation.Should().ContainSingle(x => x.ConnectionTypeId == 2 && x.WifiLoginDetailsId != null);
+        db.Addresses.Should().ContainSingle(x => x.AddressLine1 == "10 Main Road");
+        db.WifiLoginDetails.Should().ContainSingle(x => x.Ssid == "GuestWifi" && x.EncryptedPassword != "supersecret");
+    }
+
+    [Fact]
+    public async Task PostFull_ShouldReturnBadRequest_WhenProtectedConnectionMissingPassword()
+    {
+        // Arrange
+        var token = TestHelpers.CreateTestToken(nameof(Role.User));
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var request = new CreateVenueSetupRequest
+        {
+            VenueName = "Onboarded Venue",
+            Address = new CreateVenueSetupAddressRequest
+            {
+                AddressLine1 = "10 Main Road",
+                Postcode = "AB12CD"
+            },
+            Connection = new CreateVenueSetupConnectionRequest
+            {
+                ConnectionTypeId = 2,
+                Ssid = "GuestWifi"
+            }
+        };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/venue/full", request, TestContext.Current.CancellationToken);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApiDbContext>();
+        db.Venues.Should().NotContain(x => x.Name == "Onboarded Venue");
+        db.ConnectionInformation.Should().NotContain(x => x.WifiLoginDetailsId != null && x.Id > 1);
     }
 
     [Fact]

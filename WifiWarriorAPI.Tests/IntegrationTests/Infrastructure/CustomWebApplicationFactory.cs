@@ -58,8 +58,47 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             db.Venues.Add(new Venue
             {
+                Id = 1,
                 Name = "Seed Venue",
                 CreatedDate = DateTime.UtcNow,
+            });
+
+            db.ConnectionTypes.AddRange(
+                new ConnectionType
+                {
+                    Id = 1,
+                    Name = "Open",
+                    CreatedDate = DateTime.UtcNow
+                },
+                new ConnectionType
+                {
+                    Id = 2,
+                    Name = "Password",
+                    CreatedDate = DateTime.UtcNow
+                },
+                new ConnectionType
+                {
+                    Id = 3,
+                    Name = "Login",
+                    CreatedDate = DateTime.UtcNow
+                });
+
+            db.ConnectionInformation.Add(new ConnectionInformation
+            {
+                Id = 1,
+                ConnectionTypeId = 1,
+                CreatedDate = DateTime.UtcNow
+            });
+
+            db.Addresses.Add(new Address
+            {
+                Id = 1,
+                VenueId = 1,
+                AddressLine1 = "Seed Address",
+                Area = "Seed Area",
+                Postcode = "ZZ11ZZ",
+                ConnectionInformationId = 1,
+                CreatedDate = DateTime.UtcNow
             });
             
             db.SaveChanges();

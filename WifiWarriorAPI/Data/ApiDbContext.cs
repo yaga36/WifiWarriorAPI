@@ -7,6 +7,8 @@ namespace WifiWarriorAPI.Data;
 
 public class ApiDbContext: IdentityDbContext<Users>
 {
+    private static readonly DateTime SeedCreatedDate = new(2022, 11, 23, 18, 33, 25, DateTimeKind.Utc);
+
     public virtual DbSet<Venue> Venues { get; set; }
     public virtual DbSet<Address> Addresses { get; set; }
     public virtual DbSet<ConnectionType> ConnectionTypes { get; set; }
@@ -35,8 +37,8 @@ public class ApiDbContext: IdentityDbContext<Users>
         modelBuilder.Entity<ConnectionInformation>(entity =>
         {
             entity.HasOne(ct => ct.ConnectionType)
-                .WithOne()
-                .HasForeignKey<ConnectionInformation>(ci => ci.ConnectionTypeId);
+                .WithMany(ct => ct.ConnectionInformations)
+                .HasForeignKey(ci => ci.ConnectionTypeId);
 
             entity.HasOne(wd => wd.WifiLoginDetails)
                 .WithOne()
@@ -51,17 +53,20 @@ public class ApiDbContext: IdentityDbContext<Users>
             new()
             {
                 Id = 1,
-                Name = "Open"
+                Name = "Open",
+                CreatedDate = SeedCreatedDate
             },
             new()
             {
                 Id = 2,
-                Name = "Password"
+                Name = "Password",
+                CreatedDate = SeedCreatedDate
             },
             new()
             {
                 Id = 3,
-                Name = "Login"
+                Name = "Login",
+                CreatedDate = SeedCreatedDate
             }
         };
 
@@ -71,20 +76,23 @@ public class ApiDbContext: IdentityDbContext<Users>
         {
             Id = 1,
             Ssid = "SSID",
-            EncryptedPassword = "Password",
+            EncryptedPassword = "v1CfDJ8FTwavPEwcdHk0Pip-ksCds6IVxwCVmb_29WSFEv0MzB1syg5d5KCrs4B4BEKvSxoh2znT1_HuQcHtrOrAcwolie1Hlp7bVV6tcJ0ugKPV7GHOb_wr5QXJIWI3DBWjVRN_Cp0NUR6MWZvN5weJnYVrA",
+            CreatedDate = SeedCreatedDate,
         });
 
         modelBuilder.Entity<ConnectionInformation>().HasData(new ConnectionInformation
         {
             Id = 1,
             ConnectionTypeId = 2,
-            WifiLoginDetailsId = 1
+            WifiLoginDetailsId = 1,
+            CreatedDate = SeedCreatedDate
         });
 
         modelBuilder.Entity<Venue>().HasData(new Venue
         {
             Id = 1,
-            Name = "Venue Name"
+            Name = "Venue Name",
+            CreatedDate = SeedCreatedDate
         });
 
         modelBuilder.Entity<Address>().HasData(new Address
@@ -99,6 +107,7 @@ public class ApiDbContext: IdentityDbContext<Users>
             Longitude = 0.1,
             VenueId = 1,
             ConnectionInformationId = 1,
+            CreatedDate = SeedCreatedDate,
         });
     }
 }
