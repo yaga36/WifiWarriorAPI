@@ -56,6 +56,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
 
+            db.Addresses.RemoveRange(db.Addresses);
+            db.ConnectionInformation.RemoveRange(db.ConnectionInformation);
+            db.WifiLoginDetails.RemoveRange(db.WifiLoginDetails);
+            db.Venues.RemoveRange(db.Venues);
+            db.ConnectionTypes.RemoveRange(db.ConnectionTypes);
+            db.SaveChanges();
+            
             db.Venues.Add(new Venue
             {
                 Id = 1,
