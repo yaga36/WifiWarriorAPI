@@ -7,3 +7,4 @@ riderModule.iml
 WifiWarriorAPI/appsettings.Development.json
 .idea/
 *.sln.DotSettings.user
+.DS_Store
