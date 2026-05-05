@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WifiWarriorAPI.Models.Dtos;
 using WifiWarriorAPI.Models.Dtos.Venues;
 using WifiWarriorAPI.Services;
 
@@ -114,9 +115,10 @@ public class VenueController : ControllerBase
     [HttpPost("full")]
     [Authorize(Policy = "CanSubmit")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(VenueSetupResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> PostFull([FromBody] CreateVenueSetupRequest request, CancellationToken cancellationToken)
     {
         var result = await _venueService.CreateVenueSetupAsync(request, cancellationToken);
@@ -126,7 +128,7 @@ public class VenueController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
     }

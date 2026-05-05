@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WifiWarriorAPI.Models.Dtos;
 using WifiWarriorAPI.Models.Dtos.Addresses;
 using WifiWarriorAPI.Services;
 
@@ -78,7 +79,8 @@ public class AddressController : ControllerBase
     /// </returns>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(AddressResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> Post([FromBody] CreateAddressRequest request, CancellationToken cancellationToken)
     {
         var result = await _addressService.CreateAddressAsync(request, cancellationToken);
@@ -88,7 +90,7 @@ public class AddressController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
     }
@@ -110,8 +112,9 @@ public class AddressController : ControllerBase
     /// </returns>
     [HttpPut("{id:long}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> Put(long id, [FromBody] UpdateAddressRequest request, CancellationToken cancellationToken)
     {
         var result = await _addressService.UpdateAddressAsync(id, request, cancellationToken);
@@ -121,8 +124,8 @@ public class AddressController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
-            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
+            StatusCodes.Status404NotFound => NotFound(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
     }
@@ -142,8 +145,9 @@ public class AddressController : ControllerBase
     [HttpDelete("{id:long}")]
     [Authorize(Policy = "CanDelete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
         var result = await _addressService.DeleteAddressAsync(id, cancellationToken);
@@ -153,8 +157,8 @@ public class AddressController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
-            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
+            StatusCodes.Status404NotFound => NotFound(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
     }

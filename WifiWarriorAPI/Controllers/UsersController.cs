@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WifiWarriorAPI.Models.Dtos;
 using WifiWarriorAPI.Models.Dtos.Users;
 using WifiWarriorAPI.Services;
 
@@ -67,8 +68,9 @@ public class UsersController : ControllerBase
     /// </returns>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(UserResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> Post([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
     {
         var result = await _userService.CreateUserAsync(request, cancellationToken);
@@ -78,8 +80,8 @@ public class UsersController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
-            StatusCodes.Status409Conflict => Conflict(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
+            StatusCodes.Status409Conflict => Conflict(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
     }
@@ -96,8 +98,9 @@ public class UsersController : ControllerBase
     /// </returns>
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> Put(string id, [FromBody] UpdateUserRequest request, CancellationToken cancellationToken)
     {
         var result = await _userService.UpdateUserAsync(id, request, cancellationToken);
@@ -107,8 +110,8 @@ public class UsersController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
-            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
+            StatusCodes.Status404NotFound => NotFound(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
     }
@@ -125,8 +128,9 @@ public class UsersController : ControllerBase
     [HttpDelete("{id}")]
     [Authorize(Policy = "CanDelete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
     {
         var result = await _userService.DeleteUserAsync(id, cancellationToken);
@@ -136,8 +140,8 @@ public class UsersController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
-            StatusCodes.Status404NotFound => NotFound(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
+            StatusCodes.Status404NotFound => NotFound(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error, statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
     }

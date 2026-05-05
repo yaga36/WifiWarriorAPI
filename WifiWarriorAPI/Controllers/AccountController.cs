@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WifiWarriorAPI.Models;
+using WifiWarriorAPI.Models.Dtos;
 using WifiWarriorAPI.Models.Dtos.Accounts;
 using WifiWarriorAPI.Services;
 
@@ -35,8 +36,8 @@ public class AccountController : ControllerBase
     [HttpPost("register")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> Register([FromBody] RegisterAccountRequest registerRequest, CancellationToken cancellationToken)
     {
         var result = await _accountService.RegisterAsync(registerRequest, cancellationToken);
@@ -46,7 +47,7 @@ public class AccountController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error,
                 statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
@@ -65,9 +66,10 @@ public class AccountController : ControllerBase
     [HttpPost]
     [AllowAnonymous]
     [Route("login")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(ErrorResponse))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> Login([FromBody] LoginAccountRequest loginRequest, CancellationToken cancellationToken)
     {
         var result = await _accountService.LoginAsync(loginRequest, cancellationToken);
@@ -77,8 +79,8 @@ public class AccountController : ControllerBase
 
         return result.StatusCode switch
         {
-            StatusCodes.Status400BadRequest => BadRequest(new { message = result.Error }),
-            StatusCodes.Status401Unauthorized => Unauthorized(new { message = result.Error }),
+            StatusCodes.Status400BadRequest => BadRequest(new ErrorResponse { Message = result.Error }),
+            StatusCodes.Status401Unauthorized => Unauthorized(new ErrorResponse { Message = result.Error }),
             _ => Problem(detail: result.Error ?? "Unexpected error",
                 statusCode: result.StatusCode ?? StatusCodes.Status500InternalServerError)
         };
